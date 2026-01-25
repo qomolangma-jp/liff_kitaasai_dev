@@ -54,6 +54,9 @@
     </div>
     <label>班</label>
     <select id="group"></select>
+    <label>住所（番地）</label>
+    <input type="text" id="address" name="address" placeholder="">
+
     <label>受取方法</label>
     <select id="is_digital">
       <option value="1">スマホで受け取る</option>
@@ -143,6 +146,7 @@ async function init() {
           document.getElementById('kana_1st').value = k1 || "";
         }
         document.getElementById('group').value = data.group || "";
+        document.getElementById('address').value = data.address || "";
         document.getElementById('is_digital').value = data.is_digital || "デジタル配布";
         status.innerText = "登録済みの情報を読み込みました。";
         }
@@ -187,6 +191,7 @@ async function init() {
         name: name_2nd + ' ' + name_1st,
         kana: kana_2nd + ' ' + kana_1st,
         group: document.getElementById('group').value,
+        address: document.getElementById('address').value.trim(),
         is_digital: document.getElementById('is_digital').value
       };
 
