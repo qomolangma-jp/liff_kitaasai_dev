@@ -125,6 +125,7 @@
         const result = await response.json();
 
         // 取得したデータをフォームに自動反映
+        console.log("GAS取得データ:", result); // ← 開発者ツールで確認
         if (result) {
           Object.keys(result).forEach(key => {
             const elements = document.getElementsByName(key);
@@ -134,8 +135,14 @@
                 const radio = document.querySelector(`input[name="${key}"][value="${result[key]}"]`);
                 if (radio) radio.checked = true;
               } else if (el.type === 'checkbox') {
-                // カンマ区切りの文字列を配列にしてチェックを入れる
-                const values = result[key] ? result[key].split(',').map(s => s.trim()) : [];
+                // 配列またはカンマ区切り文字列の両方に対応
+                let values = [];
+                if (Array.isArray(result[key])) {
+                  values = result[key].map(s => String(s).trim());
+                } else if (result[key]) {
+                  values = String(result[key]).split(',').map(s => s.trim());
+                }
+                console.log(`checkbox [${key}] values:`, values); // ← 確認用
                 values.forEach(val => {
                   const cb = document.querySelector(`input[name="${key}"][value="${val}"]`);
                   if (cb) cb.checked = true;
