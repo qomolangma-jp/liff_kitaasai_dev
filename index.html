@@ -11,10 +11,23 @@
     .row-flex { display: flex; gap: 10px; }
     .row-flex .half { flex: 1; }
     input[type="text"], select { width: 100%; padding: 12px; margin-top: 5px; box-sizing: border-box; }
-    .radio-group, .checkbox-group { margin-top: 5px; display: flex; gap: 15px; flex-wrap: wrap; }
-    .radio-group label, .checkbox-group label { display: inline-flex; align-items: center; margin-top: 0; font-weight: normal; }
-    .radio-group input, .checkbox-group input { width: auto; margin-right: 5px; }
-    button { width: 100%; padding: 15px; background: #b94100; color: white; border: none; border-radius: 30px; margin-top: 25px; font-weight: bold; cursor: pointer; transition: opacity 0.3s; }
+    .radio-group, .checkbox-group { margin-top: 5px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .radio-group input[type="radio"],
+    .checkbox-group input[type="checkbox"] { display: none; }
+    .radio-group label, .checkbox-group label {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 10px 18px; border: 2px solid #ccc; border-radius: 30px;
+      background: #fff; color: #555; font-weight: bold; font-size: 0.95em;
+      cursor: pointer; transition: background 0.2s, border-color 0.2s, color 0.2s;
+      user-select: none; -webkit-tap-highlight-color: transparent;
+      min-width: 80px; min-height: 44px; margin-top: 0;
+    }
+    .radio-group label:has(input:checked),
+    .checkbox-group label:has(input:checked) { background: #b94100; border-color: #b94100; color: #fff; }
+    .radio-group label:hover, .checkbox-group label:hover { border-color: #b94100; color: #b94100; }
+    .radio-group label:has(input:checked):hover,
+    .checkbox-group label:has(input:checked):hover { color: #fff; }
+    button { width: 100%; padding: 15px; background: #1a7a3c; color: white; border: none; border-radius: 30px; margin-top: 25px; font-weight: bold; cursor: pointer; transition: opacity 0.3s; }
     button:disabled { opacity: 0.5; cursor: not-allowed; }
     #status { text-align: center; margin-top: 10px; color: #666; font-size: 0.9em; }
   </style>
@@ -57,7 +70,7 @@
       </select>
 
       <label>住所</label>
-      <input type="text" name="address" placeholder="例: ち3の3">
+      <input type="text" name="address" placeholder="例: 北浅井町1234-5">
 
       <label>デジタル配布希望</label>
       <div class="radio-group">
@@ -70,6 +83,8 @@
         <label><input type="checkbox" name="category" value="役員"> 役員</label>
         <label><input type="checkbox" name="category" value="班長"> 班長</label>
         <label><input type="checkbox" name="category" value="青壮年部"> 青壮年部</label>
+        <label><input type="checkbox" name="category" value="婦人部"> 婦人部</label>
+        <label><input type="checkbox" name="category" value="老人会"> 老人会</label>
       </div>
 
       <button type="button" id="submitBtn" onclick="submitData()">登録する</button>
