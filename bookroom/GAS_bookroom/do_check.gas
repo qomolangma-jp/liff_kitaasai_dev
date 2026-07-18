@@ -1,0 +1,269 @@
+/**
+ * シート「chat」と「list」のデータを処理し、一致する行を更新します。
+ * * 変更点 (V12):
+ * 1. extractInfo (氏名抽出): V11のロジックを修正。
+ * messageの1行目が不適切な（例: "6班"）場合、即座にline_nameを使わず、
+ * 2行目（例: "武田淳太郎"）を氏名としてチェックするロジックを追加しました。
+ * 1行目、2行目、line_name の順で、最もふさわしい氏名を抽出します。
+ * 2. デバッグ用にLogger.log (実行ログ) を継続します。
+ */
+function updateListFromHistory() { 
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  // 実際のシート名に合わせて必要に応じて変更してください。
+  const historySheetName = "chat";
+  const listSheetName = "list";
+
+  const historySheet = ss.getSheetByName(historySheetName);
+  const listSheet = ss.getSheetByName(listSheetName);
+
+  if (!historySheet || !listSheet) {
+    const errorMsg = `エラー: シート「${historySheetName}」または「${listSheetName}」が見つかりません。シート名を確認してください。`;
+    Logger.log(errorMsg);
+    return;
+  }
+
+  // 全データを取得
+  const historyRange = historySheet.getDataRange();
+  const listRange = listSheet.getDataRange();
+  const historyData = historyRange.getValues();
+  const listData = listRange.getValues();
+  
+  if (historyData.length <= 1 || listData.length <= 1) {
+    const errorMsg = "データ行がありません。処理を終了します。";
+    Logger.log(errorMsg);
+    return;
+  }
+
+  // ヘッダー行から各列のインデックスを取得
+  const historyHeaders = historyData[0];
+  const listHeaders = listData[0];
+
+  // historyシートのインデックス
+  const H_LINE_NAME = historyHeaders.indexOf("line_name");
+  const H_MESSAGE   = historyHeaders.indexOf("message");
+  const H_LINE_ID   = historyHeaders.indexOf("line_id");
+  const H_STATUS    = historyHeaders.indexOf("status");
+  
+  // listシートのインデックス
+  const L_GROUP     = listHeaders.indexOf("group");
+  const L_NAME      = listHeaders.indexOf("name");
+  const L_LINE_IS   = listHeaders.indexOf("line_is");
+  const L_LINE_NAME = listHeaders.indexOf("line_name");
+  const L_LINE_ID   = listHeaders.indexOf("line_id");
+
+  // ----------------------------------------------------
+  // 1. listシートの検索用マップを作成
+  // ----------------------------------------------------
+  const listMap = new Map();
+  for (let i = 1; i < listData.length; i++) {
+    const row = listData[i];
+    const group = String(row[L_GROUP] || "").trim();
+    const name = String(row[L_NAME] || "").trim();
+    const lineIs = String(row[L_LINE_IS] || "").trim();
+    
+    if (lineIs.toLowerCase() === "checked") continue;
+
+    const normalizedName = normalizeName(name); // V11の正規化
+    const normalizedGroup = normalizeNumber(group);
+
+    if (!normalizedGroup || !normalizedName) continue;
+    
+    const key = `${normalizedName}|${normalizedGroup}`;
+    
+    if (!listMap.has(key)) {
+      listMap.set(key, i);
+      // Logger.log(`listMap登録: Key="${key}", Name="${name}", Row=${i+1}`);
+    }
+  }
+  Logger.log(`listMapの準備完了 (サイズ: ${listMap.size})`);
+
+  // ----------------------------------------------------
+  // 2. historyシートを処理し、listシートのデータを更新
+  // ----------------------------------------------------
+  let updatedListCount = 0;
+  let updatedHistoryCount = 0;
+  
+  for (let i = 1; i < historyData.length; i++) {
+    const H_row = historyData[i];
+    
+    if (String(H_row[H_STATUS] || "").trim().toLowerCase() === "match") continue;
+    
+    const H_line_name = String(H_row[H_LINE_NAME] || "").trim();
+    const H_message = String(H_row[H_MESSAGE] || "").trim();
+    const H_line_id = String(H_row[H_LINE_ID] || "").trim();
+    
+    // ★ V12のロジックで抽出 (1行目 -> 2行目 -> line_name)
+    const extractedInfo = extractInfo(H_message, H_line_name); 
+    
+    const H_group = extractedInfo.group;
+    const H_normalizedName = extractedInfo.normalizedName; 
+
+    if (H_group === null || H_normalizedName === "") {
+      // Logger.log(`historyスキップ (抽出失敗): Row=${i+1}, message="${H_message}"`);
+      continue;
+    }
+
+    const key = `${H_normalizedName}|${H_group}`;
+    
+    if (listMap.has(key)) {
+      const listRowIndex = listMap.get(key); 
+      const L_row = listData[listRowIndex]; 
+      
+      Logger.log(`★ 一致 ★ Key="${key}", history Row=${i+1} (message="${H_message}"), list Row=${listRowIndex+1} (name="${L_row[L_NAME]}")`);
+
+      // listData の更新
+      L_row[L_LINE_IS]   = "checked";
+      L_row[L_LINE_NAME] = H_line_name; 
+      L_row[L_LINE_ID]   = H_line_id;
+      
+      listMap.delete(key);
+      updatedListCount++;
+      
+      // historyData の更新
+      H_row[H_STATUS] = "match";
+      updatedHistoryCount++;
+    } else {
+      // 一致しなかった場合（デバッグ用）
+      // if (H_message.includes("武田")) { // 特定のケースを追跡
+      //   Logger.log(`不一致 (デバッグ): Key="${key}", history Row=${i+1}, message="${H_message}", line_name="${H_line_name}"`);
+      // }
+    }
+  }
+
+  // ----------------------------------------------------
+  // 3. シートに一括書き込み
+  // ----------------------------------------------------
+  
+  let resultMsg = "";
+  
+  if (updatedListCount > 0) {
+    listRange.setValues(listData);
+    resultMsg += `${updatedListCount} 件のリストデータが更新されました。\n`;
+  } else {
+    resultMsg += "更新対象のリストデータは見つかりませんでした。\n";
+  }
+  
+  if (updatedHistoryCount > 0) {
+    historyRange.setValues(historyData);
+    resultMsg += `${updatedHistoryCount} 件の履歴データのステータスが「match」に更新されました。`;
+  }
+  
+  Logger.log(resultMsg.trim()); // アラートからログに変更
+}
+
+// ----------------------------------------------------
+// ヘルパー関数 (V12)
+// ----------------------------------------------------
+
+/**
+ * 全角数字を半角数字に変換します。
+ */
+function normalizeNumber(str) {
+  if (typeof str !== 'string') str = String(str || '');
+  return str.replace(/[０-９]/g, function(s) {
+    return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
+  });
+}
+
+/**
+ * 氏名から全角/半角スペース、句読点、異体字、特殊空白、
+ * 括弧と中身、接頭辞「本名」、絵文字を削除して正規化します。
+ * (V11から変更なし)
+ */
+function normalizeName(name) {
+  if (typeof name !== 'string') name = String(name || '');
+  
+  // 1. 特殊空白文字(\u202F, \u200B)を含め、あらゆるスペースや区切り文字を削除
+  let cleaned = name.replace(/[\s　\t\n\u202F\u200B、,。\.・]/g, "");
+  
+  // 2. 括弧と括弧内の「すべて」の文字を削除 (V9のロジック)
+  cleaned = cleaned.replace(/（[^）]*）/g, ""); // 全角括弧
+  cleaned = cleaned.replace(/\([^\)]*\)/g, "");  // 半角括弧
+  
+  // 3. 異体字の統一処理
+  cleaned = cleaned.replace(/收/g, "収"); 
+  
+  // 4. 特定の接尾辞を削除
+  cleaned = cleaned.replace(/です$/, "");
+  cleaned = cleaned.replace(/様$/, "");
+  
+  // 5. 氏名に使われない記号の削除（残骸の括弧など）
+  cleaned = cleaned.replace(/[()（）@]/g, "");
+  
+  // 6. 接頭辞「本名」を削除 (V11追加)
+  cleaned = cleaned.replace(/^本名/g, "");
+  
+  // 7. 絵文字を削除 (V11追加) (Unicode 13.0の絵文字範囲)
+  cleaned = cleaned.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, "");
+  
+  return cleaned;
+}
+
+/**
+ * historyから班番号と正規化された氏名を抽出します。
+ * ★ 氏名抽出は V11 のロジックを修正 (V12)。
+ * 1行目、2行目、line_name の順で、最もふさわしい氏名を採用します。
+ */
+function extractInfo(message, line_name) {
+  
+  // 1. 班番号の抽出 (V11のまま)
+  let group = null;
+  const normalizedMessage = normalizeNumber(message); 
+  const groupMatch = normalizedMessage.match(/(\d+)\s*班/);
+  if (groupMatch) {
+    group = parseInt(groupMatch[1], 10);
+  }
+
+  // 2. 氏名の抽出 (★ V12修正)
+  let name = "";
+  const lines = message.split('\n');
+  
+  // 氏名の候補を定義 (1行目, 2行目, line_name)
+  const candidates = [
+    lines[0], 
+    (lines.length > 1 ? lines[1] : ""), // 2行目が存在すれば候補に
+    line_name 
+  ];
+
+  for (let i = 0; i < candidates.length; i++) {
+    let candidate = String(candidates[i] || "").trim();
+    
+    // 候補が空なら次へ
+    if (candidate === "") continue;
+
+    // ----------------------------------------------------
+    // この候補が「氏名としてふさわしいか」をチェック
+    // ----------------------------------------------------
+    
+    // 1. チェック用に、班情報や挨拶などを除去
+    let checkStr = candidate.replace(/([0-9０-９]+)\s*班.*/, "").trim();
+    checkStr = checkStr.replace(/よろしくお願いします/, "").trim();
+    checkStr = checkStr.replace(/お住まいの班/, "").trim();
+
+    // 2. 正規化して評価
+    let normalizedCheckStr = normalizeName(checkStr); // V11の正規化を使用
+
+    // 3. 評価
+    // 2文字未満か？ (例: "6班" -> "" になる)
+    if (normalizedCheckStr.length < 2) {
+      continue; // 氏名ではない。次の候補へ
+    }
+    
+    // フリガナ（カタカナ・ひらがな）のみか？ (例: "たなか いわお")
+    if (/^[\u30A0-\u30FF\u3040-\u309F\s　]+$/.test(normalizedCheckStr)) {
+      continue; // 氏名ではない。次の候補へ
+    }
+    
+    // ----------------------------------------------------
+    // チェックを通過した場合、これを氏名として採用
+    // ----------------------------------------------------
+    name = candidate; // 元の文字列（正規化前）を採用
+    break; // 氏名が見つかったのでループを抜ける
+  }
+  
+  // 最終的に抽出された名前を正規化
+  const normalizedName = normalizeName(name);
+
+  return { group: group, normalizedName: normalizedName };
+}

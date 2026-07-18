@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="ja" class="h-full bg-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>北浅井公民館 予約＆空き状況システム</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- LINE LIFF SDK -->
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              200: '#bbf7d0',
+              500: '#22c55e',
+              600: '#16a34a',
+              700: '#15803d',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* 他人の予約済みスロットに斜線背景を適用するスタイル */
+    .booked-slot-others {
+      background-image: repeating-linear-gradient(
+        45deg,
+        #f3f4f6,
+        #f3f4f6 10px,
+        #e5e7eb 10px,
+        #e5e7eb 20px
+      );
+    }
+    /* スクロールバー非表示（iOSライクなUIのため） */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 3px;
+    }
+    /* カレンダーの日付セルの最小高さ */
+    .calendar-day-cell {
+      min-height: 70px;
+      padding: 4px;
+    }
+    .calendar-day-number {
+      font-size: 12px;
+      font-weight: 900;
+      line-height: 1;
+    }
+    .calendar-cell-selected {
+      box-shadow: inset 0 0 0 2px #10b981;
+      background: #ecfdf5 !important;
+    }
+    .calendar-dot-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 4px;
+      width: 100%;
+      margin-top: auto;
+      padding: 0 2px 1px;
+    }
+    .calendar-slot-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 9999px;
+      margin: 0 auto;
+      border: 2px solid transparent;
+    }
+    .calendar-slot-dot-free {
+      background: #10b981;
+      border-color: #059669;
+    }
+    .calendar-slot-dot-booked {
+      background: #ef4444;
+      border-color: #dc2626;
+    }
+    .calendar-slot-dot-partial {
+      background: #facc15;
+      border-color: #eab308;
+    }
+    .calendar-detail-card {
+      border: 1px solid #bbf7d0;
+      background: linear-gradient(180deg, #f0fdf4, #ffffff);
+    }
+    .calendar-loading-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(255, 255, 255, 0.92);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      z-index: 20;
+      transition: opacity 0.2s ease;
+    }
+    .calendar-loading-spinner {
+      width: 32px;
+      height: 32px;
+      border: 4px solid #d1fae5;
+      border-top-color: #10b981;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .calendar-loading-overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    @media (max-width: 640px) {
+      .calendar-day-cell {
+        min-height: 64px;
+      }
+      .calendar-slot-dot {
+        width: 10px;
+        height: 10px;
+      }
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col justify-start items-center p-0 sm:p-4 overflow-x-hidden">
+
+  <!-- 🎛️ 新デザイン：画面切り替えカプセル型タブ（ヘッダー） -->
+  <div class="w-full max-w-[480px] bg-slate-900 px-4 pt-4 pb-2 rounded-t-2xl sm:rounded-t-3xl shadow-lg z-10">
+    <div class="bg-slate-800/80 p-1 rounded-xl flex relative border border-slate-700 shadow-inner">
+      <!-- 予約フォームタブ -->
+      <button 
+        id="tabBtnForm" 
+        onclick="switchCanvas('form')" 
+        class="flex-1 py-2.5 text-xs font-bold rounded-lg transition-all duration-300 flex items-center justify-center space-x-2 text-slate-400 hover:text-slate-200"
+      >
+        <i class="fa-solid fa-file-pen text-sm"></i>
+        <span>予約を申し込む</span>
+      </button>
+      <!-- 空き状況カレンダータブ -->
+      <button 
+        id="tabBtnCalendar" 
+        onclick="switchCanvas('calendar')" 
+        class="flex-1 py-2.5 text-xs font-bold rounded-lg transition-all duration-300 flex items-center justify-center space-x-2 bg-gradient-to-b from-emerald-500 to-emerald-600 text-white shadow-md transform scale-100"
+      >
+        <i class="fa-regular fa-calendar-days text-sm"></i>
+        <span>空き状況カレンダー</span>
+      </button>
+    </div>
+
+    <!-- 🔧 ローカルテスト専用：ステータス切替スイッチ -->
+    <div id="devPanel" class="hidden mt-2.5 p-2 bg-slate-950/60 rounded-lg flex items-center justify-between text-[10px] border border-slate-800">
+      <span class="text-slate-400 font-bold"><i class="fa-solid fa-flask mr-1"></i>テスト状態:</span>
+      <div class="flex space-x-1">
+        <button onclick="setTestStatus('ok')" id="devBtnOk" class="px-2 py-0.5 bg-brand-600 text-white rounded font-bold shadow">① 正常</button>
+        <button onclick="setTestStatus('unregistered')" id="devBtnUnreg" class="px-2 py-0.5 bg-slate-700 text-slate-300 rounded">② 未登録</button>
+        <button onclick="setTestStatus('ng')" id="devBtnNg" class="px-2 py-0.5 bg-slate-700 text-slate-300 rounded">③ 利用停止</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- メインコンテナ：スマホサイズ制限（max-width: 480px）、中央配置、陰影付きカード風 -->
+  <div class="w-full max-w-[480px] min-h-screen sm:min-h-[800px] sm:max-h-[85vh] sm:rounded-b-3xl bg-white shadow-2xl flex flex-col overflow-hidden relative border border-slate-100">
+    
+    <!-- ========================================== -->
+    <!-- 📱 1. 予約申請フォーム CANVAS -->
+    <!-- ========================================== -->
+    <div id="canvasForm" class="flex flex-col flex-1 overflow-hidden hidden">
+      <!-- サブヘッダー -->
+      <div class="bg-gradient-to-r from-brand-600 to-brand-700 text-white px-5 py-3 shadow-sm flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <i class="fa-solid fa-hotel text-sm text-brand-100"></i>
+          <h2 class="text-xs font-bold tracking-wider uppercase text-brand-100">北浅井公民館窓口フォーム</h2>
+        </div>
+        <div id="devBadge" class="hidden bg-amber-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded animate-pulse">
+          ローカルモード
+        </div>
+      </div>
+
+      <!-- ローディング画面 -->
+      <div id="loading" class="flex-1 flex flex-col items-center justify-center p-8 space-y-4">
+        <div class="animate-spin rounded-full h-12 w-12 border-4 border-brand-500 border-t-transparent"></div>
+        <p class="text-slate-500 text-sm font-medium animate-pulse">住民名簿と照合中...</p>
+      </div>
+
+      <!-- ⚠️ 1. 未登録者向けの誘導画面 -->
+      <div id="notRegisteredScreen" class="hidden flex-1 flex flex-col justify-center items-center p-6 text-center space-y-6">
+        <div class="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center text-amber-500 text-3xl animate-bounce">
+          <i class="fa-solid fa-user-plus"></i>
+        </div>
+        <div class="space-y-2">
+          <h3 class="text-lg font-bold text-slate-800">町民名簿に未登録です</h3>
+          <p class="text-xs text-slate-500 leading-relaxed max-w-[280px]">
+            公民館予約システムをご利用いただくには、先に「北浅井町デジタル住民名簿」へのご登録が必要です。
+          </p>
+        </div>
+        <a 
+          href="https://liff.line.me/2008962357-ePaQmDO9" 
+          target="_blank" 
+          class="w-full max-w-[280px] py-4 bg-[#06C755] hover:bg-[#05B34C] text-white font-bold rounded-2xl shadow-lg shadow-emerald-100 flex items-center justify-center space-x-2 transition"
+        >
+          <i class="fa-solid fa-id-card"></i>
+          <span>町民名簿に登録する (外部)</span>
+        </a>
+      </div>
+
+      <!-- ⚠️ 2. 利用停止（statusがNG）の案内画面 -->
+      <div id="suspendedScreen" class="hidden flex-1 flex flex-col justify-center items-center p-6 text-center space-y-6">
+        <div class="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center text-red-500 text-3xl">
+          <i class="fa-solid fa-user-slash"></i>
+        </div>
+        <div class="space-y-2">
+          <h3 class="text-lg font-bold text-slate-800">利用が制限されています</h3>
+          <p id="suspendedMessage" class="text-xs text-slate-500 leading-relaxed max-w-[280px]">
+            現在、お客様の公民館予約システムのご利用は一時的に停止されています。理由等の詳細については町内役員または管理者までお問い合わせください。
+          </p>
+        </div>
+        <div class="w-full max-w-[280px] py-3 bg-red-50 text-red-700 text-xs font-bold rounded-xl border border-red-100 flex items-center justify-center space-x-2">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          <span>予約機能ロック中</span>
+        </div>
+      </div>
+
+      <!-- 🟢 3. 通常の予約アプリケーション画面 -->
+      <main id="app" class="flex-1 overflow-y-auto p-5 space-y-6 hidden">
+        
+        <!-- ログイン中のユーザー情報 -->
+        <div class="bg-slate-50 rounded-2xl p-4 flex items-center space-x-3 border border-slate-100">
+          <div class="relative">
+            <img id="userAvatar" class="w-12 h-12 rounded-full border-2 border-brand-500 object-cover" src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80" alt="User Profile">
+            <span class="absolute bottom-0 right-0 w-3 w-3 bg-green-500 border-2 border-white rounded-full"></span>
+          </div>
+          <div>
+            <div class="text-xs text-slate-400">ログイン中の町民</div>
+            <div class="text-sm font-bold text-slate-800">
+              <span id="userName" class="text-brand-700">名簿を確認中...</span> 様
+            </div>
+          </div>
+        </div>
+
+        <!-- 予約送信フォーム -->
+        <form id="reserveForm" class="space-y-5">
+          <!-- STEP 1 -->
+          <div class="space-y-2">
+            <label class="flex items-center text-sm font-bold text-slate-700">
+              <span class="bg-brand-100 text-brand-700 w-5 h-5 rounded-full flex items-center justify-center text-xs mr-2">1</span>
+              希望日を選択
+            </label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i class="fa-regular fa-calendar text-slate-400"></i>
+              </div>
+              <input 
+                type="date" 
+                id="reserveDate" 
+                class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-slate-800 font-medium transition"
+                required
+              >
+            </div>
+          </div>
+
+          <!-- STEP 2 -->
+          <div class="space-y-2">
+            <label class="flex items-center text-sm font-bold text-slate-700">
+              <span class="bg-brand-100 text-brand-700 w-5 h-5 rounded-full flex items-center justify-center text-xs mr-2">2</span>
+              部屋を選択
+            </label>
+            <div class="grid grid-cols-2 gap-3">
+              <!-- 小会議室 -->
+              <label class="relative flex flex-col items-center justify-center p-4 border-2 border-slate-100 rounded-xl cursor-pointer hover:bg-slate-50 transition group">
+                <input type="radio" name="room" value="小会議室" class="sr-only peer" checked required>
+                <div class="peer-checked:border-brand-500 border-2 border-transparent rounded-xl absolute inset-0 transition pointer-events-none"></div>
+                <i class="fa-solid fa-users text-slate-400 text-xl mb-1.5 transition group-hover:text-slate-600 peer-checked:text-brand-500"></i>
+                <span class="text-sm font-bold text-slate-700">小会議室</span>
+              </label>
+              <!-- 大広間 -->
+              <label class="relative flex flex-col items-center justify-center p-4 border-2 border-slate-100 rounded-xl cursor-pointer hover:bg-slate-50 transition group">
+                <input type="radio" name="room" value="大広間" class="sr-only peer">
+                <div class="peer-checked:border-brand-500 border-2 border-transparent rounded-xl absolute inset-0 transition pointer-events-none"></div>
+                <i class="fa-solid fa-people-roof text-slate-400 text-xl mb-1.5 transition group-hover:text-slate-600 peer-checked:text-brand-500"></i>
+                <span class="text-sm font-bold text-slate-700">大広間</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- STEP 3 -->
+          <div class="space-y-2">
+            <label class="flex items-center text-sm font-bold text-slate-700">
+              <span class="bg-brand-100 text-brand-700 w-5 h-5 rounded-full flex items-center justify-center text-xs mr-2">3</span>
+              時間帯を選択
+            </label>
+            <div id="timeSlotContainer" class="space-y-2">
+              <p class="text-slate-400 text-xs text-center py-4">日付と部屋を選択すると空き状況が表示されます</p>
+            </div>
+          </div>
+
+          <!-- STEP 4 -->
+          <div class="space-y-2">
+            <label for="request" class="flex items-center text-sm font-bold text-slate-700">
+              <span class="bg-brand-100 text-brand-700 w-5 h-5 rounded-full flex items-center justify-center text-xs mr-2">4</span>
+              その他・備品貸出などのご要望
+            </label>
+            <textarea
+              id="request"
+              name="request"
+              rows="3"
+              maxlength="300"
+              placeholder="例: マイク2本、プロジェクター1台を利用したいです。"
+              class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-slate-800 text-sm transition resize-none"
+            ></textarea>
+          </div>
+
+          <!-- 確定ボタン -->
+          <button 
+            type="submit" 
+            id="submitBtn" 
+            class="w-full py-4 bg-brand-600 hover:bg-brand-700 disabled:bg-slate-200 disabled:text-slate-400 text-white font-bold rounded-2xl shadow-lg shadow-brand-200 disabled:shadow-none transition-all flex items-center justify-center space-x-2"
+            disabled
+          >
+            <span>予約申請を送信する</span>
+            <i class="fa-solid fa-chevron-right text-sm"></i>
+          </button>
+        </form>
+
+        <!-- 直近予約一覧 -->
+        <div class="border-t border-slate-100 pt-6">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-bold text-slate-700 flex items-center">
+              <i class="fa-solid fa-list-check text-brand-600 mr-2"></i>
+              直近の予約状況一覧
+            </h3>
+            <button 
+              onclick="switchCanvas('calendar')" 
+              class="text-[11px] font-bold text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1.5 rounded-lg transition flex items-center gap-1"
+            >
+              <i class="fa-regular fa-calendar-days"></i>
+              予約カレンダーを見る
+            </button>
+          </div>
+          <div id="reservationList" class="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+            <p class="text-slate-400 text-xs text-center py-6">現在登録されている予約はありません</p>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 📅 2. 月間カレンダー閲覧 CANVAS -->
+    <!-- ========================================== -->
+    <div id="canvasCalendar" class="flex flex-col flex-1 overflow-hidden">
+      <!-- カレンダーヘッダー -->
+      <header class="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white px-3 py-3 shadow-md flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="bg-white/20 p-2 rounded-xl">
+            <i class="fa-solid fa-calendar-days text-xl"></i>
+          </div>
+          <div>
+            <h2 class="text-base font-bold tracking-wider">予約状況カレンダー</h2>
+            <p class="text-xs text-emerald-100">一般公開・リアルタイム</p>
+          </div>
+        </div>
+        
+        <!-- 月切り替えコントロール -->
+        <div class="flex items-center space-x-1 bg-black/10 p-1 rounded-xl text-xs">
+          <button onclick="changeMonth(-1)" class="hover:bg-white/20 text-white w-7 h-7 rounded-lg transition flex items-center justify-center">
+            <i class="fa-solid fa-chevron-left"></i>
+          </button>
+          <span id="currentMonthYear" class="font-bold px-2 text-center min-w-[75px]">2026年5月</span>
+          <button onclick="changeMonth(1)" class="hover:bg-white/20 text-white w-7 h-7 rounded-lg transition flex items-center justify-center">
+            <i class="fa-solid fa-chevron-right"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- 凡例 -->
+      <div class="bg-slate-50 border-b border-slate-100 px-4 py-2.5 flex items-center justify-between text-[11px]">
+        <div class="flex items-center space-x-4 text-[12px] font-bold text-slate-600">
+          <span class="inline-flex items-center gap-1.5">
+            <span class="calendar-slot-dot calendar-slot-dot-free"></span>
+            空きあり
+          </span>
+          <span class="inline-flex items-center gap-1.5">
+            <span class="calendar-slot-dot calendar-slot-dot-partial"></span>
+            残りわずか
+          </span>
+          <span class="inline-flex items-center gap-1.5">
+            <span class="calendar-slot-dot calendar-slot-dot-booked"></span>
+            予約済み
+          </span>
+        </div>
+      </div>
+
+      <!-- カレンダーグリッド -->
+      <div class="flex-1 overflow-y-auto p-3 relative">
+        <div id="calendarLoading" class="calendar-loading-overlay">
+          <div class="calendar-loading-spinner"></div>
+          <p class="text-xs font-bold text-slate-500">カレンダーを読み込み中...</p>
+        </div>
+
+        <!-- 曜日ヘッダー -->
+        <div class="grid grid-cols-7 text-center py-2 text-[10px] font-bold text-slate-500 bg-slate-50/50 rounded-t-lg border-b border-slate-100">
+          <div class="text-red-500">日</div>
+          <div>月</div>
+          <div>火</div>
+          <div>水</div>
+          <div>木</div>
+          <div>金</div>
+          <div class="text-blue-500">土</div>
+        </div>
+
+        <!-- 日付グリッド (7列) -->
+        <div id="calendarGrid" class="grid grid-cols-7 bg-slate-200 gap-[1px] rounded-b-lg overflow-hidden border border-slate-200">
+        </div>
+
+        <!-- 日付タップ時の詳細表示 -->
+        <section id="calendarDetailPanel" class="calendar-detail-card mt-3 rounded-xl p-3.5 shadow-sm">
+          <h3 id="calendarDetailTitle" class="text-sm font-extrabold text-slate-800">日付をタップすると詳細を表示します</h3>
+          <div id="calendarDetailList" class="mt-2 space-y-1.5 text-sm text-slate-700">
+            <p class="text-xs text-slate-500">午前・午後・夜間の空き状況をここに表示します。</p>
+          </div>
+          <button
+            id="calendarReserveBtn"
+            onclick="goToReservationFormFromCalendar()"
+            class="mt-3 w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm rounded-xl shadow-md transition-all"
+          >
+            今すぐ予約フォームから申請する
+          </button>
+        </section>
+      </div>
+
+      <!-- 下部フッター案内 -->
+      <footer class="bg-slate-50 p-4 border-t border-slate-100 flex flex-col items-center justify-center">
+        <p class="text-[10px] text-slate-400 text-center">
+          ※こちらのページには氏名などの個人情報は一切公開されません。<br>
+          空き枠を確認したら、上のボタンをタップして予約申請をしてください。
+        </p>
+      </footer>
+    </div>
+
+    <!-- 4. カスタムトースト通知メッセージ -->
+    <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-[400px] z-50 bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-xl flex items-center justify-between space-x-3 transition-all duration-300 transform translate-y-20 opacity-0 pointer-events-none">
+      <div class="flex items-center space-x-3">
+        <span id="toastIcon" class="w-8 h-8 rounded-full bg-brand-500/20 text-brand-400 flex items-center justify-center">
+          <i class="fa-solid fa-check"></i>
+        </span>
+        <p id="toastMessage" class="text-xs font-semibold">通知メッセージがここに入ります</p>
+      </div>
+      <button onclick="hideToast()" class="text-slate-400 hover:text-white p-1">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+  </div>
+
+  <script>
+    // ----------------------------------------------------
+    // 設定
+    // ----------------------------------------------------
+    const LIFF_ID = '2008893549-jeCNKx4Y'; // あなたのLIFF ID
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbx5ohewdKHhUJf57app8yBvx8OT_yS1NMYiwxh5E3DKdFDhz3wcMCv-yc5IO4wekqxF/exec"; 
+
+    let liffProfile = null;
+    let bookedData = []; 
+    let memberProfile = null; 
+
+    // 管理されている時間枠リスト
+    const TIME_SLOTS_MASTER = ["午前", "午後", "夜間"];
+    const TIME_SLOTS = [
+      { id: "slot1", label: "09:00 - 12:00", name: "午前" },
+      { id: "slot2", label: "13:00 - 17:00", name: "午後" },
+      { id: "slot3", label: "18:00 - 21:00", name: "夜間" }
+    ];
+    const ROOM_TYPES = ["小会議室", "大広間"];
+
+    let currentDate = new Date();
+    let selectedCalendarDate = null;
+
+    // ローカル環境判定
+    const isLocal = window.location.hostname === "localhost" || 
+                    window.location.hostname === "127.0.0.1" || 
+                    window.location.protocol === "file:";
+
+    // ----------------------------------------------------
+    // 🎛️ 画面切り替え（カプセル型タブコントロール）
+    // ----------------------------------------------------
+    function switchCanvas(mode) {
+      const formCanvas = document.getElementById("canvasForm");
+      const calendarCanvas = document.getElementById("canvasCalendar");
+      const btnForm = document.getElementById("tabBtnForm");
+      const btnCalendar = document.getElementById("tabBtnCalendar");
+
+      if (mode === "form") {
+        formCanvas.classList.remove("hidden");
+        calendarCanvas.classList.add("hidden");
+        
+        // アクティブな状態（ブランドカラーのグラデーション）
+        btnForm.className = "flex-1 py-2.5 text-xs font-bold rounded-lg transition-all duration-300 flex items-center justify-center space-x-2 bg-gradient-to-b from-brand-500 to-brand-600 text-white shadow-md transform scale-100";
+        // 非アクティブな状態（スッキリとした文字のみ）
+        btnCalendar.className = "flex-1 py-2.5 text-xs font-bold rounded-lg transition-all duration-300 flex items-center justify-center space-x-2 text-slate-400 hover:text-slate-200";
+        
+        updateTimeSlots();
+      } else {
+        formCanvas.classList.add("hidden");
+        calendarCanvas.classList.remove("hidden");
+        
+        btnForm.className = "flex-1 py-2.5 text-xs font-bold rounded-lg transition-all duration-300 flex items-center justify-center space-x-2 text-slate-400 hover:text-slate-200";
+        btnCalendar.className = "flex-1 py-2.5 text-xs font-bold rounded-lg transition-all duration-300 flex items-center justify-center space-x-2 bg-gradient-to-b from-emerald-500 to-emerald-600 text-white shadow-md transform scale-100";
+        
+        renderCalendar();
+      }
+    }
+
+    // ----------------------------------------------------
+    // 初期化処理（★読み込みの順番を最適化）
+    // ----------------------------------------------------
+    window.onload = function() {
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById("reserveDate").min = today;
+      document.getElementById("reserveDate").value = today;
+
+      if (isLocal) {
+        document.getElementById("devPanel").classList.remove("hidden");
+      }
+
+      initApp();
+    };
+
+    async function initApp() {
+      hideAllScreens();
+      document.getElementById("loading").classList.remove("hidden");
+      setCalendarLoading(true);
+
+      if (isLocal) {
+        document.getElementById("devBadge").classList.remove("hidden");
+
+        liffProfile = {
+          userId: "U_LOCAL_TEST_USER_999",
+          displayName: "テスト住民"
+        };
+        
+        document.getElementById("userAvatar").src = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80";
+
+        const localData = localStorage.getItem("kitaasai_local_reservations");
+        if (localData) {
+          bookedData = JSON.parse(localData);
+        } else {
+          bookedData = [
+            { date: getTodayString(), room: "小会議室", time_slot: "午後", line_id: "U_ANOTHER_123", name: "鈴木 健太", status: "確定" },
+            { date: getTodayString(), room: "大広間", time_slot: "午前", line_id: liffProfile.userId, name: "テスト住民", status: "確定" },
+            { date: getDayOffsetString(1), room: "大広間", time_slot: "夜間", line_id: "U_ANOTHER_456", name: "山田 花子", status: "保留" }
+          ];
+          saveLocalData();
+        }
+
+        // 名簿ステータスの照合
+        memberProfile = await fetchMemberProfile(liffProfile.userId);
+        renderCalendar();
+        setCalendarLoading(false);
+        applyMemberStatusUI();
+
+      } else {
+        // 📱 通常のLINE（LIFF）本番環境
+        try {
+          await liff.init({ liffId: LIFF_ID });
+          if (!liff.isLoggedIn()) {
+            liff.login();
+            return;
+          }
+          
+          // 1. まず確実にLINEログインを完了させてプロフィールを取得
+          liffProfile = await liff.getProfile();
+          if (liffProfile.pictureUrl) {
+            document.getElementById("userAvatar").src = liffProfile.pictureUrl;
+          }
+          
+          // 2. LINE IDの確定後に、初めて名簿情報と予約一覧をGASから持ってくる（バグ修正）
+          memberProfile = await fetchMemberProfile(liffProfile.userId);
+          await fetchReservations();
+          renderCalendar();
+          setCalendarLoading(false);
+          
+          // 3. すべてが揃ってから画面判定をかける
+          applyMemberStatusUI();
+          
+        } catch (error) {
+          setCalendarLoading(false);
+          showToast("❌ 初期化に失敗しました: " + error, "error");
+        }
+      }
+    }
+
+    function setCalendarLoading(isLoading) {
+      const overlay = document.getElementById("calendarLoading");
+      if (!overlay) return;
+      overlay.classList.toggle("hidden", !isLoading);
+    }
+
+    // ----------------------------------------------------
+    // 住民名簿ステータスのフェッチ & 画面制御
+    // ----------------------------------------------------
+    async function fetchMemberProfile(uid) {
+      if (isLocal) {
+        const testStatus = localStorage.getItem("kitaasai_local_test_member_status") || "ok";
+        if (testStatus === "unregistered") {
+          return { isRegistered: false };
+        } else if (testStatus === "ng") {
+          return { isRegistered: true, fullName: "制限された町民", status: "NG" };
+        } else {
+          return { isRegistered: true, fullName: "北浅井 太郎", status: "OK" };
+        }
+      }
+
+      try {
+        const response = await fetch(`${GAS_URL}?type=user&uid=${uid}`);
+        const result = await response.json();
+        // 実機デバッグ用：コンソールにGASから返ってきた実際のデータを表示
+        console.log("【名簿照合成功】GAS返却データ:", result);
+        return result;
+      } catch (error) {
+        console.error("名簿データ取得エラー:", error);
+        // 通信に失敗した場合でも「登録あり」にして予約を遮断しないフォールバック
+        return { isRegistered: true, fullName: liffProfile ? liffProfile.displayName : "ゲスト", status: "OK" };
+      }
+    }
+
+    // 名簿ステータスに応じたUIの切り替え
+    function applyMemberStatusUI() {
+      document.getElementById("loading").classList.add("hidden");
+      hideAllScreens();
+
+      // 1. 名簿未登録の場合
+      if (!memberProfile || !memberProfile.isRegistered) {
+        console.warn("⚠️ 町民名簿にLINE IDが未登録のため、登録誘導画面を表示します。");
+        document.getElementById("notRegisteredScreen").classList.remove("hidden");
+        return;
+      }
+
+      // 2. 利用停止(statusがNG)の場合
+      // ローカル環境では制限画面を表示しない
+      if (!isLocal && memberProfile.status === "NG") {
+        console.warn("⚠️ 登録はありますが、statusが「NG」のため利用制限画面を表示します。");
+        document.getElementById("suspendedScreen").classList.remove("hidden");
+        return;
+      }
+
+      // 3. 正常に名簿確認できた場合 ➔ 予約画面をアクティブ化
+      console.log("🟢 住民名簿合致: " + memberProfile.fullName + " 様 (ステータス: " + memberProfile.status + ")");
+      document.getElementById("userName").innerText = memberProfile.fullName;
+      document.getElementById("app").classList.remove("hidden");
+
+      setupEventListeners();
+      updateTimeSlots();
+      renderReservationList();
+    }
+
+    function hideAllScreens() {
+      document.getElementById("notRegisteredScreen").classList.add("hidden");
+      document.getElementById("suspendedScreen").classList.add("hidden");
+      document.getElementById("app").classList.add("hidden");
+    }
+
+    // デバッグスイッチ用
+    function setTestStatus(status) {
+      localStorage.setItem("kitaasai_local_test_member_status", status);
+      
+      document.getElementById("devBtnOk").className = "px-2 py-0.5 rounded font-bold " + (status === "ok" ? "bg-brand-600 text-white shadow" : "bg-slate-700 text-slate-300");
+      document.getElementById("devBtnUnreg").className = "px-2 py-0.5 rounded font-bold " + (status === "unregistered" ? "bg-brand-600 text-white shadow" : "bg-slate-700 text-slate-300");
+      document.getElementById("devBtnNg").className = "px-2 py-0.5 rounded font-bold " + (status === "ng" ? "bg-brand-600 text-white shadow" : "bg-slate-700 text-slate-300");
+      
+      initApp();
+    }
+
+    // ----------------------------------------------------
+    // イベントの設定
+    // ----------------------------------------------------
+    function setupEventListeners() {
+      document.getElementById("reserveDate").removeEventListener("change", updateTimeSlots);
+      document.getElementById("reserveDate").addEventListener("change", updateTimeSlots);
+
+      const roomRadios = document.querySelectorAll('input[name="room"]');
+      roomRadios.forEach(radio => {
+        radio.removeEventListener("change", updateTimeSlots);
+        radio.addEventListener("change", updateTimeSlots);
+      });
+
+      document.getElementById("reserveForm").removeEventListener("submit", submitReservation);
+      document.getElementById("reserveForm").addEventListener("submit", submitReservation);
+    }
+
+    // ----------------------------------------------------
+    // 表示コントロール & ロジック
+    // ----------------------------------------------------
+    async function fetchReservations() {
+      try {
+        const response = await fetch(GAS_URL);
+        bookedData = await response.json();
+      } catch (error) {
+        showToast("データ取得に失敗しました", "error");
+      }
+    }
+
+    function updateTimeSlots() {
+      const selectedDate = document.getElementById("reserveDate").value;
+      const selectedRoom = document.querySelector('input[name="room"]:checked')?.value;
+      const container = document.getElementById("timeSlotContainer");
+      
+      container.innerHTML = "";
+      
+      if (!selectedDate || !selectedRoom) {
+        document.getElementById("submitBtn").disabled = true;
+        return;
+      }
+
+      TIME_SLOTS.forEach(slot => {
+        const matchedReservation = bookedData.find(b => 
+          b.date === selectedDate && 
+          b.room === selectedRoom && 
+          b.time_slot === slot.name
+        );
+        
+        const label = document.createElement("label");
+        
+        if (matchedReservation) {
+          const isMyReservation = matchedReservation.line_id === liffProfile.userId;
+          const status = matchedReservation.status || "確定";
+
+          if (isMyReservation) {
+            if (status === "保留") {
+              label.className = "relative flex items-center justify-between p-4 border-2 border-amber-300 rounded-xl cursor-not-allowed select-none bg-amber-50/75";
+              label.innerHTML = `
+                <div class="flex items-center space-x-3">
+                  <span class="w-5 h-5 rounded-full border-2 border-amber-500 bg-amber-500 flex items-center justify-center text-white text-[10px]">
+                    <i class="fa-solid fa-clock"></i>
+                  </span>
+                  <div>
+                    <p class="text-xs text-amber-700 font-bold">${slot.name}</p>
+                    <p class="text-sm font-semibold text-amber-900">${slot.label}</p>
+                  </div>
+                </div>
+                <span class="bg-amber-100 text-amber-700 border border-amber-300 text-[10px] font-bold px-2.5 py-1 rounded-md flex items-center">
+                  <i class="fa-solid fa-hourglass-half mr-1 text-xs"></i>申請中（あなた）
+                </span>
+              `;
+            } else {
+              label.className = "relative flex items-center justify-between p-4 border-2 border-blue-200 rounded-xl cursor-not-allowed select-none bg-blue-50/70";
+              label.innerHTML = `
+                <div class="flex items-center space-x-3">
+                  <span class="w-5 h-5 rounded-full border-2 border-blue-500 bg-blue-500 flex items-center justify-center text-white text-[10px]">
+                    <i class="fa-solid fa-user"></i>
+                  </span>
+                  <div>
+                    <p class="text-xs text-blue-600 font-bold">${slot.name}</p>
+                    <p class="text-sm font-semibold text-blue-900">${slot.label}</p>
+                  </div>
+                </div>
+                <span class="bg-blue-100 text-blue-700 border border-blue-300 text-[10px] font-bold px-2.5 py-1 rounded-md flex items-center">
+                  <i class="fa-solid fa-circle-check mr-1 text-xs"></i>予約中（あなた）
+                </span>
+              `;
+            }
+          } else {
+            const statusLabel = status === "保留" ? "申請中" : "予約済み";
+            label.className = "booked-slot-others relative flex items-center justify-between p-4 border border-slate-200 rounded-xl cursor-not-allowed select-none opacity-75";
+            label.innerHTML = `
+              <div class="flex items-center space-x-3">
+                <span class="w-5 h-5 rounded-full border-2 border-slate-300 bg-slate-100 flex items-center justify-center text-slate-400">
+                  <i class="fa-solid fa-ban text-[10px]"></i>
+                </span>
+                <div>
+                  <p class="text-xs text-slate-400 font-bold">${slot.name}</p>
+                  <p class="text-sm font-semibold text-slate-400">${slot.label}</p>
+                </div>
+              </div>
+              <span class="bg-red-50 text-red-500 border border-red-200 text-[10px] font-bold px-2 py-1 rounded-md">
+                <i class="fa-solid fa-xmark mr-1"></i>${statusLabel}
+              </span>
+            `;
+          }
+        } else {
+          label.className = "relative flex items-center justify-between p-4 border-2 border-slate-100 hover:border-slate-200 rounded-xl cursor-pointer bg-white transition group";
+          
+          const input = document.createElement("input");
+          input.type = "radio";
+          input.name = "time_slot";
+          input.value = slot.name;
+          input.className = "sr-only peer";
+          
+          label.appendChild(input);
+          
+          const divBorder = document.createElement("div");
+          divBorder.className = "peer-checked:border-brand-500 border-2 border-transparent rounded-xl absolute inset-0 transition pointer-events-none";
+          label.appendChild(divBorder);
+
+          const content = document.createElement("div");
+          content.className = "flex items-center space-x-3";
+          content.innerHTML = `
+            <span class="w-5 h-5 rounded-full border-2 border-slate-300 peer-checked:border-brand-500 peer-checked:bg-brand-500 flex items-center justify-center text-white text-[10px] transition">
+              <i class="fa-solid fa-check opacity-0 peer-checked:opacity-100"></i>
+            </span>
+            <div>
+              <p class="text-xs text-slate-500 font-bold group-hover:text-slate-700">${slot.name}</p>
+              <p class="text-sm font-semibold text-slate-700">${slot.label}</p>
+            </div>
+          `;
+          label.appendChild(content);
+
+          const statusBadge = document.createElement("span");
+          statusBadge.className = "bg-brand-50 text-brand-600 border border-brand-200 text-[10px] font-bold px-2 py-1 rounded-md";
+          statusBadge.innerHTML = `<i class="fa-solid fa-circle text-[8px] mr-1 animate-pulse"></i>空枠あり`;
+          label.appendChild(statusBadge);
+        }
+        
+        container.appendChild(label);
+      });
+      
+      const slotRadios = document.querySelectorAll('input[name="time_slot"]');
+      slotRadios.forEach(radio => {
+        radio.addEventListener("change", () => {
+          document.getElementById("submitBtn").disabled = false;
+        });
+      });
+
+      document.getElementById("submitBtn").disabled = true;
+    }
+
+    function renderReservationList() {
+      const container = document.getElementById("reservationList");
+      container.innerHTML = "";
+
+      if (bookedData.length === 0) {
+        container.innerHTML = `<p class="text-slate-400 text-xs text-center py-6">現在登録されている予約はありません</p>`;
+        return;
+      }
+
+      const sorted = [...bookedData].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+      sorted.forEach(item => {
+        const isMine = item.line_id === liffProfile.userId;
+        const status = item.status || "確定";
+        const card = document.createElement("div");
+        
+        if (isMine) {
+          if (status === "保留") {
+            card.className = "p-3 border-l-4 border-l-amber-500 border border-slate-200 bg-amber-50/20 rounded-r-xl rounded-l-md flex justify-between items-center text-xs transition";
+          } else {
+            card.className = "p-3 border-l-4 border-l-blue-500 border border-slate-200 bg-blue-50/20 rounded-r-xl rounded-l-md flex justify-between items-center text-xs transition";
+          }
+        } else {
+          card.className = "p-3 border-l-4 border-l-slate-300 border border-slate-100 bg-slate-50 rounded-r-xl rounded-l-md flex justify-between items-center text-xs transition";
+        }
+        
+        const dateObj = new Date(item.date);
+        const weekday = ["日", "月", "火", "水", "木", "金", "土"][dateObj.getDay()];
+        const formattedDate = `${item.date.split('-')[1]}月${item.date.split('-')[2]}日(${weekday})`;
+
+        const displayName = item.name || item.line_name || "住民";
+        const labelName = isMine ? `<span class="text-blue-700 font-bold">${displayName} (あなた)</span>` : `<span class="text-slate-600 font-medium">${displayName}</span>`;
+
+        let statusBadgeHTML = "";
+        if (status === "保留") {
+          statusBadgeHTML = `<span class="px-2.5 py-1 text-[10px] font-bold rounded-md bg-amber-100 text-amber-700 flex items-center gap-1"><i class="fa-solid fa-hourglass-half text-[9px]"></i>保留</span>`;
+        } else {
+          statusBadgeHTML = `<span class="px-2.5 py-1 text-[10px] font-bold rounded-md bg-green-100 text-green-700">確定</span>`;
+        }
+
+        card.innerHTML = `
+          <div class="space-y-1">
+            <div class="flex items-center space-x-2">
+              <span class="font-bold text-slate-800">${formattedDate}</span>
+              <span class="font-semibold text-slate-600 bg-white border px-1.5 py-0.5 rounded text-[10px]">${item.room}</span>
+            </div>
+            <div class="text-slate-400 text-[10px] flex items-center space-x-1">
+              <span>時間帯: <strong class="text-slate-600 font-semibold">${item.time_slot}</strong></span>
+              <span>•</span>
+              <span>予約者: ${labelName}</span>
+            </div>
+          </div>
+          ${statusBadgeHTML}
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function renderCalendar() {
+      setCalendarLoading(true);
+
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth();
+
+      document.getElementById("currentMonthYear").innerText = `${year}年${month + 1}月`;
+
+      const grid = document.getElementById("calendarGrid");
+      grid.innerHTML = "";
+
+      const firstDay = new Date(year, month, 1);
+      const startWeekDay = firstDay.getDay();
+      const lastDay = new Date(year, month + 1, 0).getDate();
+      const prevMonthLastDay = new Date(year, month, 0).getDate();
+
+      for (let i = startWeekDay - 1; i >= 0; i--) {
+        const day = prevMonthLastDay - i;
+        const cell = createDayCell(year, month - 1, day, false);
+        grid.appendChild(cell);
+      }
+
+      for (let day = 1; day <= lastDay; day++) {
+        const cell = createDayCell(year, month, day, true);
+        grid.appendChild(cell);
+      }
+
+      const totalCells = grid.children.length;
+      const nextMonthCellsNeeded = 42 - totalCells;
+      for (let day = 1; day <= nextMonthCellsNeeded; day++) {
+        const cell = createDayCell(year, month + 1, day, false);
+        grid.appendChild(cell);
+      }
+
+      const currentMonthCells = Array.from(grid.querySelectorAll('.calendar-day-cell[data-current-month="true"]'));
+      const currentMonthDates = currentMonthCells.map(cell => cell.dataset.date);
+      const todayStr = formatDateString(new Date());
+
+      if (!selectedCalendarDate || !currentMonthDates.includes(selectedCalendarDate)) {
+        selectedCalendarDate = currentMonthDates.includes(todayStr) ? todayStr : currentMonthDates[0] || null;
+      }
+
+      highlightSelectedCalendarCell();
+      renderSelectedDayDetails(selectedCalendarDate);
+      setCalendarLoading(false);
+    }
+
+    function changeMonth(delta) {
+      currentDate.setMonth(currentDate.getMonth() + delta);
+      renderCalendar();
+    }
+
+    function createDayCell(year, month, day, isCurrentMonth) {
+      const dateObj = new Date(year, month, day);
+      const cellDateStr = formatDateString(dateObj);
+      const weekday = dateObj.getDay();
+
+      const cell = document.createElement("div");
+      cell.dataset.date = cellDateStr;
+      cell.dataset.currentMonth = isCurrentMonth ? "true" : "false";
+      
+      if (!isCurrentMonth) {
+        cell.className = "bg-slate-50 calendar-day-cell flex flex-col justify-between text-slate-300 pointer-events-none";
+      } else {
+        let bgClass = "bg-white";
+        if (weekday === 0) bgClass = "bg-red-50/10";
+        if (weekday === 6) bgClass = "bg-blue-50/10";
+        cell.className = `${bgClass} calendar-day-cell flex flex-col justify-between transition hover:bg-slate-50/30 cursor-pointer`;
+        cell.addEventListener("click", () => {
+          selectedCalendarDate = cellDateStr;
+          highlightSelectedCalendarCell();
+          renderSelectedDayDetails(cellDateStr);
+        });
+      }
+
+      const labelContainer = document.createElement("div");
+      labelContainer.className = "flex justify-between items-start";
+      
+      const dayLabel = document.createElement("span");
+      dayLabel.className = "calendar-day-number";
+      dayLabel.innerText = day;
+      
+      if (isCurrentMonth) {
+        if (weekday === 0) dayLabel.classList.add("text-red-500", "font-extrabold");
+        if (weekday === 6) dayLabel.classList.add("text-blue-500", "font-extrabold");
+        
+        const todayStr = formatDateString(new Date());
+        if (cellDateStr === todayStr) {
+          dayLabel.className = "bg-emerald-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-extrabold";
+        }
+      }
+      labelContainer.appendChild(dayLabel);
+      cell.appendChild(labelContainer);
+
+      const statusContainer = document.createElement("div");
+      statusContainer.className = "calendar-dot-strip";
+
+      if (isCurrentMonth) {
+        const dayRoomSummary = getDayRoomSlotSummary(cellDateStr);
+        TIME_SLOTS_MASTER.forEach(slotName => {
+          const dot = document.createElement("span");
+          const availability = getSlotAvailabilityFromRoomSummary(dayRoomSummary, slotName);
+          const dotStateClass = availability.isFullyBooked
+            ? "calendar-slot-dot-booked"
+            : (availability.hasAnyBooking ? "calendar-slot-dot-partial" : "calendar-slot-dot-free");
+          dot.className = `calendar-slot-dot ${dotStateClass}`;
+          dot.title = availability.isFullyBooked
+            ? `${slotName}: 予約済み（${availability.bookedCount}/${availability.totalRooms}室利用）`
+            : (availability.hasAnyBooking
+              ? `${slotName}: 一部予約済み（${availability.bookedCount}/${availability.totalRooms}室利用）`
+              : `${slotName}: 空きあり（${availability.totalRooms - availability.bookedCount}/${availability.totalRooms}室 空き）`);
+          statusContainer.appendChild(dot);
+        });
+      }
+
+      cell.appendChild(statusContainer);
+      return cell;
+    }
+
+    function getDayRoomSlotSummary(dateStr) {
+      const summary = {};
+      ROOM_TYPES.forEach(roomName => {
+        summary[roomName] = {};
+        TIME_SLOTS_MASTER.forEach(slotName => {
+          summary[roomName][slotName] = bookedData.some(r =>
+            r.date === dateStr &&
+            r.room === roomName &&
+            r.time_slot === slotName &&
+            (r.status === "確定" || r.status === "保留")
+          );
+        });
+      });
+      return summary;
+    }
+
+    function getSlotAvailabilityFromRoomSummary(dayRoomSummary, slotName) {
+      const bookedCount = ROOM_TYPES.filter(roomName => dayRoomSummary[roomName][slotName]).length;
+      return {
+        bookedCount,
+        totalRooms: ROOM_TYPES.length,
+        isFullyBooked: bookedCount === ROOM_TYPES.length,
+        hasAnyBooking: bookedCount > 0
+      };
+    }
+
+    function highlightSelectedCalendarCell() {
+      document.querySelectorAll('.calendar-day-cell[data-current-month="true"]').forEach(cell => {
+        cell.classList.remove("calendar-cell-selected");
+      });
+
+      if (!selectedCalendarDate) return;
+      const selectedCell = document.querySelector(`.calendar-day-cell[data-current-month="true"][data-date="${selectedCalendarDate}"]`);
+      if (selectedCell) {
+        selectedCell.classList.add("calendar-cell-selected");
+      }
+    }
+
+    function renderSelectedDayDetails(dateStr) {
+      const detailTitle = document.getElementById("calendarDetailTitle");
+      const detailList = document.getElementById("calendarDetailList");
+      const reserveBtn = document.getElementById("calendarReserveBtn");
+
+      if (!dateStr) {
+        detailTitle.innerText = "日付をタップすると詳細を表示します";
+        detailList.innerHTML = `
+          <div class="flex items-center gap-3 text-[11px] font-bold text-slate-600">
+            <span class="inline-flex items-center gap-1.5"><i class="fa-solid fa-users text-emerald-600"></i>小会議室</span>
+            <span class="inline-flex items-center gap-1.5"><i class="fa-solid fa-people-roof text-blue-600"></i>大広間</span>
+            <span class="inline-flex items-center gap-1.5"><span class="text-emerald-700">〇</span>空き</span>
+            <span class="inline-flex items-center gap-1.5"><span class="text-red-600">×</span>予約済</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-1">午前・午後・夜間の空き状況をここに表示します。</p>
+        `;
+        reserveBtn.disabled = true;
+        reserveBtn.className = "mt-3 w-full py-3 bg-slate-300 text-slate-500 font-bold text-sm rounded-xl";
+        return;
+      }
+
+      const [year, month, day] = dateStr.split("-").map(Number);
+      const weekNames = ["日", "月", "火", "水", "木", "金", "土"];
+      const weekday = weekNames[new Date(year, month - 1, day).getDay()];
+      detailTitle.innerText = `【${month}月${day}日（${weekday}）の空き状況】`;
+
+      const dayRoomSummary = getDayRoomSlotSummary(dateStr);
+
+      const slotRowsHtml = TIME_SLOTS_MASTER.map(slotName => {
+        const isSmallRoomBooked = dayRoomSummary["小会議室"][slotName];
+        const isLargeRoomBooked = dayRoomSummary["大広間"][slotName];
+
+        const smallRoomStatusClass = isSmallRoomBooked ? "text-red-600" : "text-emerald-700";
+        const largeRoomStatusClass = isLargeRoomBooked ? "text-red-600" : "text-emerald-700";
+
+        return `
+          <div class="rounded-lg border border-slate-200 bg-white px-2.5 py-2">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-sm font-extrabold text-slate-800 min-w-[40px]">${slotName}</span>
+              <div class="flex items-center gap-3 text-xs font-bold">
+                <span class="inline-flex items-center gap-1 ${smallRoomStatusClass}">
+                  <i class="fa-solid fa-users"></i>
+                  <span>${isSmallRoomBooked ? "×" : "〇"}</span>
+                </span>
+                <span class="inline-flex items-center gap-1 ${largeRoomStatusClass}">
+                  <i class="fa-solid fa-people-roof"></i>
+                  <span>${isLargeRoomBooked ? "×" : "〇"}</span>
+                </span>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      detailList.innerHTML = `
+        <div class="flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5 text-[11px] font-bold text-slate-600">
+          <span class="inline-flex items-center gap-1.5"><i class="fa-solid fa-users text-emerald-600"></i>小会議室</span>
+          <span class="inline-flex items-center gap-1.5"><i class="fa-solid fa-people-roof text-blue-600"></i>大広間</span>
+          <span class="inline-flex items-center gap-1.5"><span class="text-emerald-700">〇</span>空き</span>
+          <span class="inline-flex items-center gap-1.5"><span class="text-red-600">×</span>予約済</span>
+        </div>
+        <div class="space-y-1.5 mt-2">${slotRowsHtml}</div>
+      `;
+
+      const reserveDateMin = document.getElementById("reserveDate").min;
+      const canReserve = dateStr >= reserveDateMin;
+      reserveBtn.disabled = !canReserve;
+      reserveBtn.className = canReserve
+        ? "mt-3 w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm rounded-xl shadow-md transition-all"
+        : "mt-3 w-full py-3 bg-slate-300 text-slate-500 font-bold text-sm rounded-xl";
+      reserveBtn.innerText = canReserve
+        ? `${month}月${day}日で予約フォームへ進む`
+        : "過去日付は予約できません";
+    }
+
+    function goToReservationFormFromCalendar() {
+      if (!selectedCalendarDate) return;
+
+      const reserveDateInput = document.getElementById("reserveDate");
+      if (selectedCalendarDate >= reserveDateInput.min) {
+        reserveDateInput.value = selectedCalendarDate;
+      }
+      switchCanvas("form");
+      updateTimeSlots();
+    }
+
+    async function submitReservation(e) {
+      e.preventDefault();
+      
+      const selectedDate = document.getElementById("reserveDate").value;
+      const selectedRoom = document.querySelector('input[name="room"]:checked')?.value;
+      const selectedSlot = document.querySelector('input[name="time_slot"]:checked')?.value;
+      
+      if (!selectedSlot) {
+        showToast("❌ 時間帯を選択してください", "error");
+        return;
+      }
+
+      const submitBtn = document.getElementById("submitBtn");
+      const originalBtnHTML = submitBtn.innerHTML;
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `<i class="fa-solid fa-spinner animate-spin mr-2"></i>申請中...`;
+
+      const payload = {
+        line_id: liffProfile.userId,
+        line_name: liffProfile.displayName,
+        date: selectedDate,
+        room: selectedRoom,
+        time_slot: selectedSlot,
+        request: document.getElementById("request")?.value?.trim() || "",
+        liff_token: isLocal ? "LOCAL_TEST_TOKEN" : (liff.getAccessToken() || "")
+      };
+
+      if (isLocal) {
+        setTimeout(() => {
+          const dup = bookedData.some(b => b.date === selectedDate && b.room === selectedRoom && b.time_slot === selectedSlot && (b.status === "確定" || b.status === "保留"));
+          if (dup) {
+            showToast("⚠️ 既に申請・予約が完了している時間帯です", "error");
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnHTML;
+            return;
+          }
+
+          bookedData.push({
+            date: selectedDate,
+            room: selectedRoom,
+            time_slot: selectedSlot,
+            line_id: liffProfile.userId,
+            name: memberProfile ? memberProfile.fullName : liffProfile.displayName,
+            status: "保留"
+          });
+
+          saveLocalData();
+          showToast("🎉 【ローカル模擬】予約申請を送信しました！");
+          
+          updateTimeSlots();
+          renderReservationList();
+          
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalBtnHTML;
+        }, 1000);
+
+      } else {
+        try {
+          const response = await fetch(GAS_URL, {
+            method: "POST",
+            body: JSON.stringify(payload)
+          });
+          const result = await response.json();
+          
+          if (result.status === "success") {
+            showToast("🎉 予約申請を送信しました！");
+            submitBtn.innerHTML = `<i class="fa-solid fa-check mr-2"></i>送信完了`;
+            
+            setTimeout(() => {
+              liff.closeWindow();
+            }, 2000);
+
+          } else {
+            showToast("⚠️ エラー: " + result.message, "error");
+            await fetchReservations();
+            updateTimeSlots();
+            renderReservationList();
+            
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnHTML;
+          }
+        } catch (error) {
+          showToast("❌ 通信エラーが発生しました", "error");
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalBtnHTML;
+        }
+      }
+    }
+
+    function showToast(message, type = "success") {
+      const toast = document.getElementById("toast");
+      const toastMessage = document.getElementById("toastMessage");
+      const toastIcon = document.getElementById("toastIcon");
+
+      toastMessage.innerText = message;
+      
+      if (type === "success") {
+        toastIcon.className = "w-8 h-8 rounded-full bg-brand-500/20 text-brand-500 flex items-center justify-center";
+        toastIcon.innerHTML = `<i class="fa-solid fa-check"></i>`;
+      } else {
+        toastIcon.className = "w-8 h-8 rounded-full bg-red-500/20 text-red-500 flex items-center justify-center";
+        toastIcon.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i>`;
+      }
+
+      toast.classList.remove("translate-y-20", "opacity-0", "pointer-events-none");
+      toast.classList.add("translate-y-0", "opacity-100");
+
+      setTimeout(() => {
+        hideToast();
+      }, 4000);
+    }
+
+    function hideToast() {
+      const toast = document.getElementById("toast");
+      toast.classList.remove("translate-y-0", "opacity-100");
+      toast.classList.add("translate-y-20", "opacity-0", "pointer-events-none");
+    }
+
+    function getTodayString() {
+      const today = new Date();
+      return today.toISOString().split('T')[0];
+    }
+
+    function getDayOffsetString(offset) {
+      const target = new Date();
+      target.setDate(target.getDate() + offset);
+      return target.toISOString().split('T')[0];
+    }
+
+    function saveLocalData() {
+      localStorage.setItem("kitaasai_local_reservations", JSON.stringify(bookedData));
+    }
+
+    function formatDateString(date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+  </script>
+</body>
+</html>
