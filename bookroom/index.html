@@ -202,11 +202,11 @@
         <div class="space-y-2">
           <h3 class="text-lg font-bold text-slate-800">町民名簿に未登録です</h3>
           <p class="text-xs text-slate-500 leading-relaxed max-w-[280px]">
-            公民館予約システムをご利用いただくには、先に「北浅井町デジタル住民名簿」へのご登録が必要です。
+            公民館予約システムをご利用いただくには、先に「町内会デジタル住民名簿」へのご登録が必要です。
           </p>
         </div>
         <a 
-          href="https://liff.line.me/2008962357-ePaQmDO9" 
+          href="https://liff.line.me/2008893549-jeCNKx4Y" 
           target="_blank" 
           class="w-full max-w-[280px] py-4 bg-[#06C755] hover:bg-[#05B34C] text-white font-bold rounded-2xl shadow-lg shadow-emerald-100 flex items-center justify-center space-x-2 transition"
         >
@@ -276,20 +276,27 @@
               <span class="bg-brand-100 text-brand-700 w-5 h-5 rounded-full flex items-center justify-center text-xs mr-2">2</span>
               部屋を選択
             </label>
-            <div class="grid grid-cols-2 gap-3">
+            <div class="grid grid-cols-3 gap-2">
               <!-- 小会議室 -->
-              <label class="relative flex flex-col items-center justify-center p-4 border-2 border-slate-100 rounded-xl cursor-pointer hover:bg-slate-50 transition group">
+              <label class="relative flex flex-col items-center justify-center p-3 border-2 border-slate-100 rounded-xl cursor-pointer hover:bg-slate-50 transition group">
                 <input type="radio" name="room" value="小会議室" class="sr-only peer" checked required>
                 <div class="peer-checked:border-brand-500 border-2 border-transparent rounded-xl absolute inset-0 transition pointer-events-none"></div>
                 <i class="fa-solid fa-users text-slate-400 text-xl mb-1.5 transition group-hover:text-slate-600 peer-checked:text-brand-500"></i>
-                <span class="text-sm font-bold text-slate-700">小会議室</span>
+                <span class="text-xs font-bold text-slate-700">小会議室</span>
+              </label>
+              <!-- 大会議室 -->
+              <label class="relative flex flex-col items-center justify-center p-3 border-2 border-slate-100 rounded-xl cursor-pointer hover:bg-slate-50 transition group">
+                <input type="radio" name="room" value="大会議室" class="sr-only peer">
+                <div class="peer-checked:border-brand-500 border-2 border-transparent rounded-xl absolute inset-0 transition pointer-events-none"></div>
+                <i class="fa-solid fa-building text-slate-400 text-xl mb-1.5 transition group-hover:text-slate-600 peer-checked:text-brand-500"></i>
+                <span class="text-xs font-bold text-slate-700">大会議室</span>
               </label>
               <!-- 大広間 -->
-              <label class="relative flex flex-col items-center justify-center p-4 border-2 border-slate-100 rounded-xl cursor-pointer hover:bg-slate-50 transition group">
+              <label class="relative flex flex-col items-center justify-center p-3 border-2 border-slate-100 rounded-xl cursor-pointer hover:bg-slate-50 transition group">
                 <input type="radio" name="room" value="大広間" class="sr-only peer">
                 <div class="peer-checked:border-brand-500 border-2 border-transparent rounded-xl absolute inset-0 transition pointer-events-none"></div>
                 <i class="fa-solid fa-people-roof text-slate-400 text-xl mb-1.5 transition group-hover:text-slate-600 peer-checked:text-brand-500"></i>
-                <span class="text-sm font-bold text-slate-700">大広間</span>
+                <span class="text-xs font-bold text-slate-700">大広間</span>
               </label>
             </div>
           </div>
@@ -481,7 +488,8 @@
       { id: "slot2", label: "13:00 - 17:00", name: "午後" },
       { id: "slot3", label: "18:00 - 21:00", name: "夜間" }
     ];
-    const ROOM_TYPES = ["小会議室", "大広間"];
+    const ROOM_TYPES = ["小会議室", "大会議室", "大広間"];
+    const ROOM_ICONS = { "小会議室": "fa-solid fa-users", "大会議室": "fa-solid fa-building", "大広間": "fa-solid fa-people-roof" };
 
     let currentDate = new Date();
     let selectedCalendarDate = null;
@@ -1056,10 +1064,10 @@
 
       if (!dateStr) {
         detailTitle.innerText = "日付をタップすると詳細を表示します";
+        const roomLegendSpans0 = ROOM_TYPES.map(r => `<span class="inline-flex items-center gap-1.5"><i class="${ROOM_ICONS[r]}"></i>${r}</span>`).join("");
         detailList.innerHTML = `
-          <div class="flex items-center gap-3 text-[11px] font-bold text-slate-600">
-            <span class="inline-flex items-center gap-1.5"><i class="fa-solid fa-users text-emerald-600"></i>小会議室</span>
-            <span class="inline-flex items-center gap-1.5"><i class="fa-solid fa-people-roof text-blue-600"></i>大広間</span>
+          <div class="flex items-center gap-3 text-[11px] font-bold text-slate-600 flex-wrap">
+            ${roomLegendSpans0}
             <span class="inline-flex items-center gap-1.5"><span class="text-emerald-700">〇</span>空き</span>
             <span class="inline-flex items-center gap-1.5"><span class="text-red-600">×</span>予約済</span>
           </div>
@@ -1078,35 +1086,28 @@
       const dayRoomSummary = getDayRoomSlotSummary(dateStr);
 
       const slotRowsHtml = TIME_SLOTS_MASTER.map(slotName => {
-        const isSmallRoomBooked = dayRoomSummary["小会議室"][slotName];
-        const isLargeRoomBooked = dayRoomSummary["大広間"][slotName];
-
-        const smallRoomStatusClass = isSmallRoomBooked ? "text-red-600" : "text-emerald-700";
-        const largeRoomStatusClass = isLargeRoomBooked ? "text-red-600" : "text-emerald-700";
+        const roomStatusHtml = ROOM_TYPES.map(roomName => {
+          const isBooked = dayRoomSummary[roomName][slotName];
+          const statusClass = isBooked ? "text-red-600" : "text-emerald-700";
+          return `<span class="inline-flex items-center gap-1 ${statusClass}"><i class="${ROOM_ICONS[roomName]}"></i><span>${isBooked ? "×" : "〇"}</span></span>`;
+        }).join("");
 
         return `
           <div class="rounded-lg border border-slate-200 bg-white px-2.5 py-2">
             <div class="flex items-center justify-between gap-2">
               <span class="text-sm font-extrabold text-slate-800 min-w-[40px]">${slotName}</span>
               <div class="flex items-center gap-3 text-xs font-bold">
-                <span class="inline-flex items-center gap-1 ${smallRoomStatusClass}">
-                  <i class="fa-solid fa-users"></i>
-                  <span>${isSmallRoomBooked ? "×" : "〇"}</span>
-                </span>
-                <span class="inline-flex items-center gap-1 ${largeRoomStatusClass}">
-                  <i class="fa-solid fa-people-roof"></i>
-                  <span>${isLargeRoomBooked ? "×" : "〇"}</span>
-                </span>
+                ${roomStatusHtml}
               </div>
             </div>
           </div>
         `;
       }).join("");
 
+      const roomLegendSpans = ROOM_TYPES.map(r => `<span class="inline-flex items-center gap-1.5"><i class="${ROOM_ICONS[r]}"></i>${r}</span>`).join("");
       detailList.innerHTML = `
-        <div class="flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5 text-[11px] font-bold text-slate-600">
-          <span class="inline-flex items-center gap-1.5"><i class="fa-solid fa-users text-emerald-600"></i>小会議室</span>
-          <span class="inline-flex items-center gap-1.5"><i class="fa-solid fa-people-roof text-blue-600"></i>大広間</span>
+        <div class="flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5 text-[11px] font-bold text-slate-600 flex-wrap">
+          ${roomLegendSpans}
           <span class="inline-flex items-center gap-1.5"><span class="text-emerald-700">〇</span>空き</span>
           <span class="inline-flex items-center gap-1.5"><span class="text-red-600">×</span>予約済</span>
         </div>
