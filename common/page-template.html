@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LIFF App Template</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              200: '#bbf7d0',
+              500: '#22c55e',
+              600: '#16a34a',
+              700: '#15803d'
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="stylesheet" href="../common/app-shell.css" />
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="../common/member-check.js"></script>
+  <script src="../common/liff-app.js"></script>
+  <script src="../common/ui-patterns.js"></script>
+  <script src="../common/ui-helpers.js"></script>
+</head>
+<body class="h-full app-page overflow-x-hidden">
+  <main class="app-shell app-shell--desktop">
+    <header class="app-header">
+      <div class="app-header__tabbar">
+        <button id="tabMain" type="button" class="app-header__tab is-active" data-tab="main">
+          <i class="fa-solid fa-house"></i>
+          <span>メイン</span>
+        </button>
+        <button id="tabSub" type="button" class="app-header__tab" data-tab="sub">
+          <i class="fa-solid fa-list"></i>
+          <span>一覧</span>
+        </button>
+      </div>
+    </header>
+
+    <section class="app-toolbar">
+      <div class="app-toolbar__inner">
+        <h1 class="app-toolbar__title">
+          <i class="fa-solid fa-layer-group"></i>
+          <span>共通 LIFF App 雛形</span>
+        </h1>
+        <span id="devBadge" class="app-badge hidden">LOCAL MODE</span>
+      </div>
+    </section>
+
+    <section id="loading" class="app-screen app-screen--centered">
+      <div class="app-loading">
+        <div class="app-loading__spinner"></div>
+        <p class="text-sm font-semibold text-slate-600">読み込み中...</p>
+      </div>
+    </section>
+
+    <section id="notRegisteredScreen" class="hidden app-screen app-screen--centered">
+      <div class="app-status-card">
+        <div class="app-status-card__icon text-amber-500"><i class="fa-regular fa-face-frown-open"></i></div>
+        <h2 class="app-status-card__title">名簿への登録が必要です</h2>
+        <p class="app-status-card__text">このアプリを利用するには、事前登録が必要です。</p>
+        <a id="registerLink" href="#" target="_blank" rel="noopener noreferrer" class="app-cta app-cta--warning mt-4">
+          <i class="fa-solid fa-up-right-from-square"></i>
+          <span>登録フォームを開く</span>
+        </a>
+      </div>
+    </section>
+
+    <section id="suspendedScreen" class="hidden app-screen app-screen--centered">
+      <div class="app-status-card app-status-card--danger">
+        <div class="app-status-card__icon text-rose-500"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        <h2 class="app-status-card__title">現在ご利用できません</h2>
+        <p class="app-status-card__text">利用制限があります。管理者へお問い合わせください。</p>
+      </div>
+    </section>
+
+    <section id="app" class="hidden app-screen">
+      <div class="app-section">
+        <article class="app-card app-card--soft">
+          <div class="app-user-row">
+            <img id="userAvatar" src="https://placehold.jp/96x96.png" alt="avatar" class="app-user-row__avatar" />
+            <div>
+              <p class="app-user-row__label">ログイン中の利用者</p>
+              <p class="app-user-row__name"><span id="userName">-</span> 様</p>
+            </div>
+          </div>
+        </article>
+
+        <div id="mainPane" class="app-panel">
+          <article class="app-card app-card--brand">
+            <span class="app-card__meta">メイン画面</span>
+            <h3 class="app-card__heading">ここにページ固有のコンテンツ</h3>
+          </article>
+
+          <div class="app-surface app-surface--brand p-4">
+            <button type="button" id="demoToastBtn" class="app-cta">
+              <i class="fa-solid fa-bell"></i>
+              <span>トースト表示</span>
+            </button>
+          </div>
+        </div>
+
+        <div id="subPane" class="hidden app-panel">
+          <article class="app-card">
+            <span class="app-card__meta">一覧画面</span>
+            <h3 class="app-card__heading">閲覧・検索・一覧を表示</h3>
+          </article>
+          <div class="app-empty-state">一覧データはここに入ります</div>
+        </div>
+      </div>
+    </section>
+
+    <div id="toast" class="pointer-events-none fixed left-1/2 -translate-x-1/2 bottom-4 w-[calc(100%-2rem)] max-w-[440px] hidden">
+      <div id="toastInner" class="rounded-xl px-4 py-3 text-sm font-semibold shadow-xl"></div>
+    </div>
+  </main>
+
+  <script>
+    const LIFF_ID = 'YOUR_LIFF_ID';
+    const REGISTER_FORM_URL = 'https://example.com/register';
+    const GAS_URL = 'https://script.google.com/macros/s/YOUR_DEPLOY_ID/exec';
+    const state = {
+      profile: null,
+      member: null,
+      activeTab: 'main'
+    };
+
+    const el = {
+      loading: document.getElementById('loading'),
+      notRegisteredScreen: document.getElementById('notRegisteredScreen'),
+      suspendedScreen: document.getElementById('suspendedScreen'),
+      app: document.getElementById('app'),
+      userName: document.getElementById('userName'),
+      userAvatar: document.getElementById('userAvatar'),
+      registerLink: document.getElementById('registerLink'),
+      tabMain: document.getElementById('tabMain'),
+      tabSub: document.getElementById('tabSub'),
+      mainPane: document.getElementById('mainPane'),
+      subPane: document.getElementById('subPane'),
+      toast: document.getElementById('toast'),
+      toastInner: document.getElementById('toastInner'),
+      devBadge: document.getElementById('devBadge'),
+      demoToastBtn: document.getElementById('demoToastBtn')
+    };
+
+    function isLocalRuntime() {
+      return LiffApp.isLocalRuntime(window.location);
+    }
+
+    function setScreen(next) {
+      AppUi.setScreenState({
+        loading: el.loading,
+        notRegistered: el.notRegisteredScreen,
+        suspended: el.suspendedScreen,
+        app: el.app
+      }, next);
+    }
+
+    function showToast(message, type = 'info') {
+      AppUi.showToast({
+        toast: el.toast,
+        toastInner: el.toastInner,
+        message,
+        type,
+        duration: 2600
+      });
+    }
+
+    function setTab(tabName) {
+      state.activeTab = tabName;
+      const isMain = tabName === 'main';
+      el.mainPane.classList.toggle('hidden', !isMain);
+      el.subPane.classList.toggle('hidden', isMain);
+      el.tabMain.classList.toggle('is-active', isMain);
+      el.tabSub.classList.toggle('is-active', !isMain);
+    }
+
+    async function initLiff() {
+      await liff.init({ liffId: LIFF_ID });
+      if (!liff.isLoggedIn()) {
+        liff.login();
+        return null;
+      }
+      return liff.getProfile();
+    }
+
+    async function fetchMemberProfile(uid) {
+      if (isLocalRuntime()) {
+        return {
+          isRegistered: true,
+          status: 'ok',
+          fullName: 'テスト住民',
+          registerFormUrl: REGISTER_FORM_URL
+        };
+      }
+
+      try {
+        const res = await fetch(`${GAS_URL}?type=user&uid=${uid}`);
+        const raw = await res.json();
+        const normalized = MemberCheck.normalizeMemberCheckResponse(raw);
+        return {
+          isRegistered: normalized.isRegistered,
+          status: normalized.status,
+          fullName: normalized.fullName || '町民',
+          registerFormUrl: normalized.registerFormUrl || REGISTER_FORM_URL
+        };
+      } catch (error) {
+        console.error(error);
+        return {
+          isRegistered: true,
+          status: 'ok',
+          fullName: '町民',
+          registerFormUrl: REGISTER_FORM_URL
+        };
+      }
+    }
+
+    async function initApp() {
+      setScreen('loading');
+      setTab('main');
+
+      try {
+        if (isLocalRuntime()) {
+          state.profile = {
+            userId: 'U_LOCAL_TEMPLATE',
+            displayName: 'テスト住民',
+            pictureUrl: 'https://placehold.jp/96x96.png'
+          };
+        } else {
+          state.profile = await initLiff();
+          if (!state.profile) return;
+        }
+
+        el.userAvatar.src = state.profile.pictureUrl || 'https://placehold.jp/96x96.png';
+        el.userName.textContent = state.profile.displayName || '町民';
+
+        state.member = await fetchMemberProfile(state.profile.userId);
+        el.registerLink.href = state.member.registerFormUrl || REGISTER_FORM_URL;
+
+        const access = LiffApp.resolveMemberAccess(state.member);
+
+        if (!access.isAllowed) {
+          setScreen(access.state);
+          return;
+        }
+
+        el.userName.textContent = access.member.fullName || state.profile.displayName || '町民';
+        setScreen('app');
+      } catch (error) {
+        console.error(error);
+        showToast('初期化中にエラーが発生しました', 'error');
+        setScreen('app');
+      }
+    }
+
+    el.tabMain.addEventListener('click', () => setTab('main'));
+    el.tabSub.addEventListener('click', () => setTab('sub'));
+    el.demoToastBtn.addEventListener('click', () => showToast('これは共通テンプレートのサンプルです', 'success'));
+
+    if (isLocalRuntime()) {
+      el.devBadge.classList.remove('hidden');
+    }
+
+    initApp();
+  </script>
+</body>
+</html>

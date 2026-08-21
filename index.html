@@ -3,64 +3,320 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>[テスト環境]北浅井町町内会 配布設定</title>
+  <title>北浅井町|デジタル回覧板用名簿登録フォーム</title>
   <style>
-    body { font-family: sans-serif; padding: 0; margin: 0; background: #f0f0f0;}
-    .container { max-width: 500px; margin: 0 auto; background: #fff; padding: 30px 15px;}
-    label { display: block; margin-top: 15px; font-weight: bold; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      padding: 0;
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top, rgba(34, 197, 94, 0.14), transparent 34%),
+        linear-gradient(180deg, #e2e8f0 0%, #f8fafc 45%, #eef2f7 100%);
+      color: #0f172a;
+    }
+    .container {
+      max-width: 480px;
+      margin: 20px auto 32px;
+      background: #fff;
+      padding: 0;
+      border-radius: 28px;
+      overflow: hidden;
+      border: 1px solid rgba(226, 232, 240, 0.95);
+      box-shadow: 0 24px 80px rgba(15, 23, 42, 0.16);
+    }
+    .hero {
+      background: linear-gradient(135deg, #0f172a 0%, #0f172a 50%, #166534 100%);
+      color: #fff;
+      padding: 22px 20px 18px;
+    }
+    .hero-topline {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #bbf7d0;
+      margin-bottom: 10px;
+    }
+    .hero h1 {
+      font-size: 1.1rem;
+      line-height: 1.45;
+      margin: 0;
+      font-weight: 900;
+    }
+    .hero p {
+      margin: 8px 0 0;
+      color: #dbeafe;
+      font-size: 0.8rem;
+      line-height: 1.7;
+    }
+    .hero-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      color: #fff;
+    }
+    .content { padding: 18px 15px 22px; }
+    label { display: block; margin-top: 22px; font-weight: 800; color: #334155; }
+    .under-label{ font-size: 0.9em; margin-top: 5px; }
     .row-flex { display: flex; gap: 10px; }
     .row-flex .half { flex: 1; }
-    input[type="text"], select { width: 100%; padding: 12px; margin-top: 5px; box-sizing: border-box; }
+    input[type="text"], select, textarea {
+      width: 100%;
+      padding: 13px 14px;
+      margin-top: 6px;
+      box-sizing: border-box;
+      border: 1px solid #cbd5e1;
+      border-radius: 14px;
+      background: #f8fafc;
+      color: #0f172a;
+      font-size: 16px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+    }
+    input[type="text"]:focus, select:focus, textarea:focus {
+      border-color: #16a34a;
+      background: #fff;
+      box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.12);
+    }
     .radio-group, .checkbox-group { margin-top: 5px; display: flex; gap: 15px 0; flex-wrap: wrap; justify-content: space-between;}
     .radio-group input[type="radio"],
     .checkbox-group input[type="checkbox"] { display: none; }
     .radio-group label, .checkbox-group label {
       display: inline-flex; align-items: center; justify-content: center;
-      padding: 12px 5px; border: 2px solid #ccc; border-radius: 25px;
-      background: #fff; color: #555; font-weight: bold; font-size: 0.75em;
+      padding: 12px 5px; border: 2px solid #e2e8f0; border-radius: 999px;
+      background: #fff; color: #475569; font-weight: 800; font-size: 0.76em;
       cursor: pointer; transition: background 0.2s, border-color 0.2s, color 0.2s;
       user-select: none; -webkit-tap-highlight-color: transparent;
-      width: 44%; margin-top: 0;
+      width: 48%; margin-top: 0;
     }
+    .checkbox-group.ver-3 label {width: 32%;}
     .radio-group label:has(input:checked),
-    .checkbox-group label:has(input:checked) { background: #b94100; border-color: #b94100; color: #fff; }
-    .radio-group label:hover, .checkbox-group label:hover { border-color: #b94100; color: #b94100; }
+    .checkbox-group label:has(input:checked),
+    .radio-group label.is-selected,
+    .checkbox-group label.is-selected { background: linear-gradient(135deg, #16a34a, #15803d); border-color: #16a34a; color: #fff; box-shadow: 0 10px 18px rgba(22, 163, 74, 0.18); }
+    .radio-group label:hover, .checkbox-group label:hover { border-color: #16a34a; color: #16a34a; }
     .radio-group label:has(input:checked):hover,
-    .checkbox-group label:has(input:checked):hover { color: #fff; }
-    button { width: 100%; padding: 15px; background: #1a7a3c; color: white; border: none; border-radius: 30px; margin-top: 25px; font-weight: bold; cursor: pointer; transition: opacity 0.3s; }
-    button:disabled { opacity: 0.5; cursor: not-allowed; }
-    #status { text-align: center; margin-top: 10px; color: #666; font-size: 0.9em; }
+    .checkbox-group label:has(input:checked):hover,
+    .radio-group label.is-selected:hover,
+    .checkbox-group label.is-selected:hover { color: #fff; }
+    .radio-group.is-invalid label {
+      border-color: #dc2626;
+      color: #b91c1c;
+      background: #fef2f2;
+    }
+    button {
+      width: 100%;
+      padding: 15px;
+      background: linear-gradient(135deg, #16a34a, #15803d);
+      color: white;
+      border: none;
+      border-radius: 18px;
+      margin-top: 25px;
+      font-weight: 900;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s, opacity 0.3s;
+      box-shadow: 0 12px 24px rgba(22, 163, 74, 0.22);
+    }
+    button:hover { transform: translateY(-1px); }
+    button:disabled { opacity: 0.55; cursor: not-allowed; box-shadow: none; transform: none; }
+    #status { text-align: center; margin-top: 10px; color: #64748b; font-size: 0.9em; }
+    .required-mark { color: #c0392b; margin-left: 2px; }
+    #loading-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 12px;
+    }
+    #loading-overlay.visible { display: flex; }
+    .spinner {
+      width: 44px; height: 44px;
+      border: 5px solid rgba(255, 255, 255, 0.25);
+      border-top-color: #22c55e;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loading-overlay p { font-size: 0.9em; color: #fff; margin: 0; }
+    #result-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.55);
+      z-index: 110;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    #result-modal.visible { display: flex; }
+    .modal-card {
+      width: min(420px, 100%);
+      background: #fff;
+      border-radius: 18px;
+      padding: 22px 18px 16px;
+      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.28);
+      border: 1px solid #e2e8f0;
+      text-align: center;
+      transform: translateY(6px);
+      opacity: 0;
+      transition: transform 0.2s ease, opacity 0.2s ease;
+    }
+    #result-modal.visible .modal-card {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    .modal-icon {
+      width: 54px;
+      height: 54px;
+      margin: 0 auto 10px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      font-weight: 900;
+    }
+    .modal-icon.success {
+      background: #dcfce7;
+      color: #166534;
+    }
+    .modal-icon.error {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+    .modal-icon.info {
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+    #modal-title {
+      margin: 0;
+      font-size: 1.05rem;
+      color: #0f172a;
+      font-weight: 900;
+    }
+    #modal-message {
+      margin: 10px 0 0;
+      color: #334155;
+      font-size: 0.93rem;
+      line-height: 1.7;
+      white-space: pre-line;
+    }
+    #modal-close-btn {
+      margin-top: 16px;
+      width: 100%;
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 0.95rem;
+      font-weight: 900;
+      border: none;
+      cursor: pointer;
+      color: #fff;
+      background: linear-gradient(135deg, #16a34a, #15803d);
+    }
+    #modal-close-btn.error {
+      background: linear-gradient(135deg, #dc2626, #b91c1c);
+    }
+    .officer-badges {
+      margin-top: 8px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .officer-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 7px 25px;
+      border-radius: 999px;
+      font-size: 1rem;
+      font-weight: bold;
+      color: #fff;
+      line-height: 1;
+    }
+    .officer-badge.officer { background: linear-gradient(135deg, #dc2626, #b91c1c); }
+    .officer-badge.leader { background: linear-gradient(135deg, #2563eb, #1d4ed8); }
+    @media (max-width: 640px) {
+      .container { margin: 0; border-radius: 0; min-height: 100vh; }
+      .content { padding: 16px 14px 20px; }
+      .checkbox-group.ver-3 label { width: 49%; }
+      .row-flex { flex-direction: column; }
+      .row-flex.keep-row-on-mobile { flex-direction: row; }
+      .row-flex.keep-row-on-mobile .half { min-width: 0; }
+    }
   </style>
 </head>
 <body>
+  <div id="loading-overlay">
+    <div class="spinner"></div>
+    <p>データ読み込み中...</p>
+  </div>
+
+  <div id="result-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" aria-describedby="modal-message">
+    <div class="modal-card">
+      <div id="modal-icon" class="modal-icon info" aria-hidden="true">i</div>
+      <h2 id="modal-title">お知らせ</h2>
+      <p id="modal-message"></p>
+      <button type="button" id="modal-close-btn">閉じる</button>
+    </div>
+  </div>
+
   <div class="container">
-    <h2>配布設定・プロフィール入力</h2>
+    <div class="hero">
+      <h1>北浅井町 デジタル住民名簿 登録フォーム</h1>
+      <p>公民館予約や回覧板配信のため登録して下さい。</p>
+      <div class="hero-badges">
+        <span class="hero-badge">住民登録</span>
+        <span class="hero-badge">回覧板</span>
+        <span class="hero-badge">役員管理</span>
+      </div>
+    </div>
 
+    <div class="content">
     <form id="profileForm">
-      <div class="row-flex">
+      <div class="row-flex keep-row-on-mobile">
         <div class="half">
-          <label>氏</label>
-          <input type="text" name="name_2nd" placeholder="例: 山田">
+          <label>氏<span class="required-mark">※</span></label>
+          <input type="text" name="name_2nd" placeholder="例: 山田" required>
         </div>
         <div class="half">
-          <label>名</label>
-          <input type="text" name="name_1st" placeholder="例: 太郎">
-        </div>
-      </div>
-
-      <div class="row-flex">
-        <div class="half">
-          <label>シ</label>
-          <input type="text" name="kana_2nd" placeholder="例: ヤマダ">
-        </div>
-        <div class="half">
-          <label>メイ</label>
-          <input type="text" name="kana_1st" placeholder="例: タロウ">
+          <label>名<span class="required-mark">※</span></label>
+          <input type="text" name="name_1st" placeholder="例: 太郎" required>
         </div>
       </div>
 
-      <label>班</label>
-      <select name="group">
+      <div class="row-flex keep-row-on-mobile">
+        <div class="half">
+          <label>シ<span class="required-mark">※</span></label>
+          <input type="text" name="kana_2nd" placeholder="例: ヤマダ" required>
+        </div>
+        <div class="half">
+          <label>メイ<span class="required-mark">※</span></label>
+          <input type="text" name="kana_1st" placeholder="例: タロウ" required>
+        </div>
+      </div>
+
+      <label>班<span class="required-mark">※</span></label>
+      <select name="group" required>
         <option value="">選択してください</option>
         <script>
           for(let i=1; i<=15; i++) {
@@ -79,27 +335,189 @@
       </div>
 
       <label>カテゴリ（複数選択可）</label>
-      <div class="checkbox-group">
-        <label><input type="checkbox" name="category" value="役員"> 役員</label>
-        <label><input type="checkbox" name="category" value="班長"> 班長</label>
-        <label><input type="checkbox" name="category" value="青壮年部"> 青壮年部</label>
-        <label><input type="checkbox" name="category" value="婦人部"> 婦人部</label>
-        <label><input type="checkbox" name="category" value="老人会"> 老人会</label>
+      <p class="under-label">役員、班長は運営側で設定いたします</p>
+      <div id="officerBadges" class="officer-badges" aria-live="polite"></div>
+
+      <div class="checkbox-group ver-3">
+        <label><input type="checkbox" name="role" value="公民館"> 公民館</label>
+        <label><input type="checkbox" name="role" value="自主防災会"> 自主防災会</label>
+        <label><input type="checkbox" name="role" value="青壮年部"> 青壮年部</label>
+        <label><input type="checkbox" name="role" value="婦人部"> 婦人部</label>
+        <label><input type="checkbox" name="role" value="民生委員"> 民生委員</label>
+        <label><input type="checkbox" name="role" value="ほがらかクラブ"> ほがらかクラブ</label>
+        <label><input type="checkbox" name="role" value="神社奉賛会"> 神社奉賛会</label>
       </div>
+
+      <label>その他の所属</label>
+      <textarea name="other" rows="5" placeholder="例: 体育協会、消防団など"></textarea>
 
       <button type="button" id="submitBtn" onclick="submitData()">登録する</button>
       <div id="status"></div>
     </form>
+    </div>
   </div>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script>
     // ※ ご自身の公開URLに変更してください
-    const LIFF_ID = '2008893549-jeCNKx4Y'; // あなたのLIFF ID
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbxrWq6JQMU2PWkwW94So_osDiWHEnEsiV2LnMdL9cBVbe0ohfd1n3SEMZ1X6Q_mlY94/exec'; // あなたのGAS ウェブアプリURL
+    
+    const LIFF_ID = '2008962357-ePaQmDO9'; // あなたのLIFF ID
+		const GAS_URL = "https://script.google.com/macros/s/AKfycbz48WTnbJlYOFc_bog41yu0KHXCUdEseuIc__LeEidJ9YbjkaMu59k32UwQvVJItGGk/exec"; 
 
     function isLocalEnvironment() {
       return window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    }
+
+    function normalizeChoiceValue(value) {
+      return String(value ?? "")
+        .replace(/\u3000/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    function parseCheckboxValues(value) {
+      if (Array.isArray(value)) {
+        return value
+          .map(normalizeChoiceValue)
+          .filter(Boolean);
+      }
+
+      if (!value) {
+        return [];
+      }
+
+      return String(value)
+        .split(/[\n\r\t,、]/)
+        .map(normalizeChoiceValue)
+        .filter(Boolean);
+    }
+
+    function applyCheckboxValues(name, rawValue) {
+      const values = parseCheckboxValues(rawValue);
+      const checkboxes = Array.from(document.querySelectorAll(`input[name="${name}"][type="checkbox"]`));
+      const checkboxMap = new Map(
+        checkboxes.map(cb => [normalizeChoiceValue(cb.value), cb])
+      );
+
+      checkboxes.forEach(cb => {
+        cb.checked = false;
+      });
+
+      const unmatchedValues = [];
+      values.forEach(value => {
+        const checkbox = checkboxMap.get(value);
+        if (checkbox) {
+          checkbox.checked = true;
+        } else {
+          unmatchedValues.push(value);
+        }
+      });
+
+      console.log(`checkbox [${name}] values:`, values);
+      if (unmatchedValues.length > 0) {
+        console.warn(`checkbox [${name}] unmatched values:`, unmatchedValues);
+      }
+
+      syncSelectableLabels();
+    }
+
+    function parseOfficerValues(value) {
+      if (!value) {
+        return [];
+      }
+
+      const normalized = String(value)
+        .replace(/\u3000/g, ' ')
+        .trim();
+
+      if (!normalized) {
+        return [];
+      }
+
+      return normalized
+        .split(/[\n\r,、]/)
+        .map(normalizeChoiceValue)
+        .filter(Boolean);
+    }
+
+    function renderOfficerBadges(officerValue) {
+      const badgeContainer = document.getElementById('officerBadges');
+      if (!badgeContainer) {
+        return;
+      }
+
+      const values = parseOfficerValues(officerValue);
+      const uniqueValues = Array.from(new Set(values));
+
+      const badgeClassByRole = {
+        '役員': 'officer',
+        '班長': 'leader'
+      };
+
+      const badgesHtml = uniqueValues
+        .map(role => {
+          const roleClass = badgeClassByRole[role];
+          if (!roleClass) {
+            return '';
+          }
+          return `<span class="officer-badge ${roleClass}">${role}</span>`;
+        })
+        .filter(Boolean)
+        .join('');
+
+      badgeContainer.innerHTML = badgesHtml;
+    }
+
+    function syncSelectableLabels() {
+      document.querySelectorAll('.radio-group label, .checkbox-group label').forEach(label => {
+        const input = label.querySelector('input[type="radio"], input[type="checkbox"]');
+        if (input) {
+          label.classList.toggle('is-selected', input.checked);
+        }
+      });
+
+      const digitalGroup = document.querySelector('.radio-group');
+      if (digitalGroup && document.querySelector('input[name="is_digital"]:checked')) {
+        digitalGroup.classList.remove('is-invalid');
+      }
+    }
+
+    function showModal({ title = 'お知らせ', message = '', type = 'info', onClose = null }) {
+      const modal = document.getElementById('result-modal');
+      const titleEl = document.getElementById('modal-title');
+      const messageEl = document.getElementById('modal-message');
+      const iconEl = document.getElementById('modal-icon');
+      const closeBtn = document.getElementById('modal-close-btn');
+
+      if (!modal || !titleEl || !messageEl || !iconEl || !closeBtn) {
+        return;
+      }
+
+      const iconByType = {
+        success: '✓',
+        error: '!',
+        info: 'i'
+      };
+
+      const safeType = iconByType[type] ? type : 'info';
+
+      titleEl.textContent = title;
+      messageEl.textContent = message;
+      iconEl.textContent = iconByType[safeType];
+      iconEl.className = `modal-icon ${safeType}`;
+      closeBtn.className = safeType === 'error' ? 'error' : '';
+
+      const handleClose = () => {
+        modal.classList.remove('visible');
+        closeBtn.removeEventListener('click', handleClose);
+        if (typeof onClose === 'function') {
+          onClose();
+        }
+      };
+
+      closeBtn.addEventListener('click', handleClose);
+      modal.classList.add('visible');
+      closeBtn.focus();
     }
 
     window.onload = async function() {
@@ -107,8 +525,13 @@
       
       if (isLocalEnvironment()) {
         status.innerText = "ローカル環境で起動中...";
+        syncSelectableLabels();
         return;
       }
+
+      document.querySelectorAll('.radio-group input, .checkbox-group input').forEach(input => {
+        input.addEventListener('change', syncSelectableLabels);
+      });
 
       try {
         await liff.init({ liffId: LIFF_ID });
@@ -117,7 +540,8 @@
           return;
         }
 
-        status.innerText = "データ読み込み中...";
+        const overlay = document.getElementById('loading-overlay');
+        overlay.classList.add('visible');
         const profile = await liff.getProfile();
         
         // GASから既存データを取得
@@ -135,26 +559,22 @@
                 const radio = document.querySelector(`input[name="${key}"][value="${result[key]}"]`);
                 if (radio) radio.checked = true;
               } else if (el.type === 'checkbox') {
-                // 配列またはカンマ区切り文字列の両方に対応
-                let values = [];
-                if (Array.isArray(result[key])) {
-                  values = result[key].map(s => String(s).trim());
-                } else if (result[key]) {
-                  values = String(result[key]).split(',').map(s => s.trim());
-                }
-                console.log(`checkbox [${key}] values:`, values); // ← 確認用
-                values.forEach(val => {
-                  const cb = document.querySelector(`input[name="${key}"][value="${val}"]`);
-                  if (cb) cb.checked = true;
-                });
+                applyCheckboxValues(key, result[key]);
               } else {
                 el.value = result[key];
               }
             }
           });
+
+          renderOfficerBadges(result.officer);
+        } else {
+          renderOfficerBadges('');
         }
+        overlay.classList.remove('visible');
         status.innerText = "";
+        syncSelectableLabels();
       } catch (err) {
+        document.getElementById('loading-overlay').classList.remove('visible');
         status.innerText = "初期化エラー: " + err.message;
       }
     };
@@ -162,6 +582,27 @@
     async function submitData() {
       const button = document.getElementById('submitBtn');
       const status = document.getElementById('status');
+      const form = document.getElementById('profileForm');
+      const digitalGroup = document.querySelector('.radio-group');
+      const isDigitalSelected = Boolean(document.querySelector('input[name="is_digital"]:checked'));
+
+      if (!isDigitalSelected) {
+        if (digitalGroup) {
+          digitalGroup.classList.add('is-invalid');
+          digitalGroup.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        showModal({
+          title: '入力チェック',
+          message: 'デジタル配布希望を選択してください。',
+          type: 'error'
+        });
+        return;
+      }
+
+      if (form && !form.reportValidity()) {
+        return;
+      }
+
       button.disabled = true;
       status.innerText = "送信中...";
       
@@ -174,7 +615,8 @@
         // フォーム内のすべての input, select, textarea からデータを自動収集
         const data = {
           line_id: profile.userId,
-          line_name: profile.displayName
+          line_name: profile.displayName,
+          liff_token: isLocalEnvironment() ? "LOCAL_TEST_TOKEN" : (liff.getAccessToken() || "")
         };
 
         const formElements = document.querySelectorAll('input[name], select[name], textarea[name]');
@@ -200,7 +642,11 @@
         if (isLocalEnvironment()) {
           await new Promise(resolve => setTimeout(resolve, 1000));
           console.log("送信データ:", data);
-          alert("登録完了！（ローカルダミー送信）");
+          showModal({
+            title: '登録完了',
+            message: 'ローカル環境でダミー送信しました。',
+            type: 'success'
+          });
         } else {
           const response = await fetch(GAS_URL, {
             method: "POST",
@@ -208,14 +654,26 @@
           });
           const result = await response.json();
           if (result.status === 'success') {
-            alert("登録完了！");
-            liff.closeWindow();
+            showModal({
+              title: '登録完了',
+              message: '登録が完了しました。',
+              type: 'success',
+              onClose: () => liff.closeWindow()
+            });
           } else {
-            alert("エラーが発生しました: " + result.message);
+            showModal({
+              title: '送信エラー',
+              message: 'エラーが発生しました: ' + result.message,
+              type: 'error'
+            });
           }
         }
       } catch (err) {
-        alert("通信エラー: " + err.message);
+        showModal({
+          title: '通信エラー',
+          message: '通信エラー: ' + err.message,
+          type: 'error'
+        });
       } finally {
         button.disabled = false;
         status.innerText = "";

@@ -6,10 +6,12 @@
   <title>北浅井公民館 予約＆空き状況システム</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../common/app-shell.css">
   <!-- FontAwesome for icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- LINE LIFF SDK -->
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="../common/ui-patterns.js"></script>
   <script>
     tailwind.config = {
       theme: {
@@ -131,10 +133,11 @@
     }
   </style>
 </head>
-<body class="h-full flex flex-col justify-start items-center p-0 sm:p-4 overflow-x-hidden">
+<body class="h-full app-page overflow-x-hidden">
 
-  <!-- 🎛️ 新デザイン：画面切り替えカプセル型タブ（ヘッダー） -->
-  <div class="w-full max-w-[480px] bg-slate-900 px-4 pt-4 pb-2 rounded-t-2xl sm:rounded-t-3xl shadow-lg z-10">
+  <div class="app-shell app-shell--desktop">
+    <!-- 🎛️ 新デザイン：画面切り替えカプセル型タブ（ヘッダー） -->
+    <div class="app-header">
     <div class="bg-slate-800/80 p-1 rounded-xl flex relative border border-slate-700 shadow-inner">
       <!-- 予約フォームタブ -->
       <button 
@@ -167,9 +170,6 @@
     </div>
   </div>
 
-  <!-- メインコンテナ：スマホサイズ制限（max-width: 480px）、中央配置、陰影付きカード風 -->
-  <div class="w-full max-w-[480px] min-h-screen sm:min-h-[800px] sm:max-h-[85vh] sm:rounded-b-3xl bg-white shadow-2xl flex flex-col overflow-hidden relative border border-slate-100">
-    
     <!-- ========================================== -->
     <!-- 📱 1. 予約申請フォーム CANVAS -->
     <!-- ========================================== -->
@@ -199,11 +199,11 @@
         <div class="space-y-2">
           <h3 class="text-lg font-bold text-slate-800">町民名簿に未登録です</h3>
           <p class="text-xs text-slate-500 leading-relaxed max-w-[280px]">
-            公民館予約システムをご利用いただくには、先に「町内会デジタル住民名簿」へのご登録が必要です。
+            公民館予約システムをご利用いただくには、先に「北浅井町デジタル住民名簿」へのご登録が必要です。
           </p>
         </div>
         <a 
-          href="https://liff.line.me/2008893549-jeCNKx4Y" 
+          href="https://liff.line.me/2008962357-ePaQmDO9" 
           target="_blank" 
           class="w-full max-w-[280px] py-4 bg-[#06C755] hover:bg-[#05B34C] text-white font-bold rounded-2xl shadow-lg shadow-emerald-100 flex items-center justify-center space-x-2 transition"
         >
@@ -273,27 +273,20 @@
               <span class="bg-brand-100 text-brand-700 w-5 h-5 rounded-full flex items-center justify-center text-xs mr-2">2</span>
               部屋を選択
             </label>
-            <div class="grid grid-cols-3 gap-2">
+            <div class="grid grid-cols-2 gap-3">
               <!-- 小会議室 -->
-              <label class="relative flex flex-col items-center justify-center p-3 border-2 border-slate-100 rounded-xl cursor-pointer hover:bg-slate-50 transition group">
+              <label class="relative flex flex-col items-center justify-center p-4 border-2 border-slate-100 rounded-xl cursor-pointer hover:bg-slate-50 transition group">
                 <input type="radio" name="room" value="小会議室" class="sr-only peer" checked required>
                 <div class="peer-checked:border-brand-500 border-2 border-transparent rounded-xl absolute inset-0 transition pointer-events-none"></div>
                 <i class="fa-solid fa-users text-slate-400 text-xl mb-1.5 transition group-hover:text-slate-600 peer-checked:text-brand-500"></i>
-                <span class="text-xs font-bold text-slate-700">小会議室</span>
-              </label>
-              <!-- 大会議室 -->
-              <label class="relative flex flex-col items-center justify-center p-3 border-2 border-slate-100 rounded-xl cursor-pointer hover:bg-slate-50 transition group">
-                <input type="radio" name="room" value="大会議室" class="sr-only peer">
-                <div class="peer-checked:border-brand-500 border-2 border-transparent rounded-xl absolute inset-0 transition pointer-events-none"></div>
-                <i class="fa-solid fa-building text-slate-400 text-xl mb-1.5 transition group-hover:text-slate-600 peer-checked:text-brand-500"></i>
-                <span class="text-xs font-bold text-slate-700">大会議室</span>
+                <span class="text-sm font-bold text-slate-700">小会議室</span>
               </label>
               <!-- 大広間 -->
-              <label class="relative flex flex-col items-center justify-center p-3 border-2 border-slate-100 rounded-xl cursor-pointer hover:bg-slate-50 transition group">
+              <label class="relative flex flex-col items-center justify-center p-4 border-2 border-slate-100 rounded-xl cursor-pointer hover:bg-slate-50 transition group">
                 <input type="radio" name="room" value="大広間" class="sr-only peer">
                 <div class="peer-checked:border-brand-500 border-2 border-transparent rounded-xl absolute inset-0 transition pointer-events-none"></div>
                 <i class="fa-solid fa-people-roof text-slate-400 text-xl mb-1.5 transition group-hover:text-slate-600 peer-checked:text-brand-500"></i>
-                <span class="text-xs font-bold text-slate-700">大広間</span>
+                <span class="text-sm font-bold text-slate-700">大広間</span>
               </label>
             </div>
           </div>
@@ -467,12 +460,13 @@
 
   </div>
 
+  <script src="../common/member-check.js"></script>
   <script>
     // ----------------------------------------------------
     // 設定
     // ----------------------------------------------------
-    const LIFF_ID = '2008893549-jeCNKx4Y'; // あなたのLIFF ID
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbx5ohewdKHhUJf57app8yBvx8OT_yS1NMYiwxh5E3DKdFDhz3wcMCv-yc5IO4wekqxF/exec"; 
+    const LIFF_ID = "2008962357-gLXhtSi2";
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbz48WTnbJlYOFc_bog41yu0KHXCUdEseuIc__LeEidJ9YbjkaMu59k32UwQvVJItGGk/exec"; 
 
     let liffProfile = null;
     let bookedData = []; 
@@ -480,13 +474,14 @@
 
     // 管理されている時間枠リスト
     const TIME_SLOTS_MASTER = ["午前", "午後", "夜間"];
+    // TIME_SLOTS に終日を追加
     const TIME_SLOTS = [
       { id: "slot1", label: "09:00 - 12:00", name: "午前" },
       { id: "slot2", label: "13:00 - 17:00", name: "午後" },
-      { id: "slot3", label: "18:00 - 21:00", name: "夜間" }
+      { id: "slot3", label: "18:00 - 21:00", name: "夜間" },
+      { id: "slot4", label: "09:00 - 21:00 (全時間帯)", name: "終日" } // ★追加
     ];
-    const ROOM_TYPES = ["小会議室", "大会議室", "大広間"];
-    const ROOM_ICONS = { "小会議室": "fa-solid fa-users", "大会議室": "fa-solid fa-building", "大広間": "fa-solid fa-people-roof" };
+    const ROOM_TYPES = ["小会議室", "大広間"];
 
     let currentDate = new Date();
     let selectedCalendarDate = null;
@@ -541,7 +536,7 @@
       initApp();
     };
 
-    async function initApp() {
+async function initApp() {
       hideAllScreens();
       document.getElementById("loading").classList.remove("hidden");
       setCalendarLoading(true);
@@ -589,13 +584,18 @@
             document.getElementById("userAvatar").src = liffProfile.pictureUrl;
           }
           
-          // 2. LINE IDの確定後に、初めて名簿情報と予約一覧をGASから持ってくる（バグ修正）
-          memberProfile = await fetchMemberProfile(liffProfile.userId);
-          await fetchReservations();
+          // 2. 名簿情報と予約一覧を並列で取得（高速化）
+          const [profileResult, _] = await Promise.all([
+            fetchMemberProfile(liffProfile.userId),
+            fetchReservations()
+          ]);
+          memberProfile = profileResult;
+          
+          // 3. カレンダー描画とローディング解除
           renderCalendar();
           setCalendarLoading(false);
           
-          // 3. すべてが揃ってから画面判定をかける
+          // 4. ステータス判定・画面表示
           applyMemberStatusUI();
           
         } catch (error) {
@@ -603,7 +603,7 @@
           showToast("❌ 初期化に失敗しました: " + error, "error");
         }
       }
-    }
+    }    
 
     function setCalendarLoading(isLoading) {
       const overlay = document.getElementById("calendarLoading");
@@ -618,24 +618,22 @@
       if (isLocal) {
         const testStatus = localStorage.getItem("kitaasai_local_test_member_status") || "ok";
         if (testStatus === "unregistered") {
-          return { isRegistered: false };
+          return { isRegistered: false, status: "not_registered" };
         } else if (testStatus === "ng") {
-          return { isRegistered: true, fullName: "制限された町民", status: "NG" };
+          return { isRegistered: true, fullName: "制限された町民", status: "suspended" };
         } else {
-          return { isRegistered: true, fullName: "北浅井 太郎", status: "OK" };
+          return { isRegistered: true, fullName: "北浅井 太郎", status: "ok" };
         }
       }
 
       try {
         const response = await fetch(`${GAS_URL}?type=user&uid=${uid}`);
         const result = await response.json();
-        // 実機デバッグ用：コンソールにGASから返ってきた実際のデータを表示
         console.log("【名簿照合成功】GAS返却データ:", result);
-        return result;
+        return MemberCheck.normalizeMemberCheckResponse(result);
       } catch (error) {
         console.error("名簿データ取得エラー:", error);
-        // 通信に失敗した場合でも「登録あり」にして予約を遮断しないフォールバック
-        return { isRegistered: true, fullName: liffProfile ? liffProfile.displayName : "ゲスト", status: "OK" };
+        return { isRegistered: true, fullName: liffProfile ? liffProfile.displayName : "ゲスト", status: "ok" };
       }
     }
 
@@ -644,24 +642,25 @@
       document.getElementById("loading").classList.add("hidden");
       hideAllScreens();
 
+      const normalizedStatus = MemberCheck.normalizeMemberStatus(memberProfile && memberProfile.status);
+
       // 1. 名簿未登録の場合
-      if (!memberProfile || !memberProfile.isRegistered) {
+      if (!memberProfile || !memberProfile.isRegistered || normalizedStatus === "not_registered") {
         console.warn("⚠️ 町民名簿にLINE IDが未登録のため、登録誘導画面を表示します。");
         document.getElementById("notRegisteredScreen").classList.remove("hidden");
         return;
       }
 
-      // 2. 利用停止(statusがNG)の場合
-      // ローカル環境では制限画面を表示しない
-      if (!isLocal && memberProfile.status === "NG") {
-        console.warn("⚠️ 登録はありますが、statusが「NG」のため利用制限画面を表示します。");
+      // 2. 利用停止(statusがNG / suspended)の場合
+      if (!isLocal && normalizedStatus === "suspended") {
+        console.warn("⚠️ 登録はありますが、statusが利用停止のため利用制限画面を表示します。");
         document.getElementById("suspendedScreen").classList.remove("hidden");
         return;
       }
 
       // 3. 正常に名簿確認できた場合 ➔ 予約画面をアクティブ化
-      console.log("🟢 住民名簿合致: " + memberProfile.fullName + " 様 (ステータス: " + memberProfile.status + ")");
-      document.getElementById("userName").innerText = memberProfile.fullName;
+      console.log("🟢 住民名簿合致: " + (memberProfile.fullName || "町民") + " 様 (ステータス: " + normalizedStatus + ")");
+      document.getElementById("userName").innerText = memberProfile.fullName || "町民";
       document.getElementById("app").classList.remove("hidden");
 
       setupEventListeners();
@@ -708,147 +707,208 @@
     // ----------------------------------------------------
     async function fetchReservations() {
       try {
-        const response = await fetch(GAS_URL);
-        bookedData = await response.json();
+        const response = await fetch(GAS_URL, { method: "GET", cache: "no-store" });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (!Array.isArray(data)) {
+          throw new Error("予約データ形式が不正です");
+        }
+
+        bookedData = data;
+        return true;
       } catch (error) {
+        console.error("予約データ取得エラー:", error);
+        bookedData = [];
         showToast("データ取得に失敗しました", "error");
+        return false;
       }
     }
 
-    function updateTimeSlots() {
-      const selectedDate = document.getElementById("reserveDate").value;
-      const selectedRoom = document.querySelector('input[name="room"]:checked')?.value;
-      const container = document.getElementById("timeSlotContainer");
+function updateTimeSlots() {
+  const selectedDate = document.getElementById("reserveDate").value;
+  const selectedRoom = document.querySelector('input[name="room"]:checked')?.value;
+  const container = document.getElementById("timeSlotContainer");
+  const safeBookedData = Array.isArray(bookedData) ? bookedData : [];
+  
+  container.innerHTML = "";
+  
+  if (!selectedDate || !selectedRoom) {
+    document.getElementById("submitBtn").disabled = true;
+    return;
+  }
+
+  // 現在選択されている「日付」と「部屋」の既存予約データを取得
+  const currentBookings = safeBookedData.filter(b => 
+    b.date === selectedDate && 
+    b.room === selectedRoom && 
+    (b.status === "確定" || b.status === "保留")
+  );
+
+  // 午前・午後・夜間のいずれかが予約済み（または申請中）かチェック
+  const isAnySlotBooked = TIME_SLOTS_MASTER.some(slotName => 
+    currentBookings.some(b => b.time_slot === slotName)
+  );
+
+  TIME_SLOTS.forEach(slot => {
+    // --------------------------------------------------
+    // 1. 「終日」の描写処理
+    // --------------------------------------------------
+    if (slot.name === "終日") {
+      const label = document.createElement("label");
       
-      container.innerHTML = "";
-      
-      if (!selectedDate || !selectedRoom) {
-        document.getElementById("submitBtn").disabled = true;
-        return;
-      }
-
-      TIME_SLOTS.forEach(slot => {
-        const matchedReservation = bookedData.find(b => 
-          b.date === selectedDate && 
-          b.room === selectedRoom && 
-          b.time_slot === slot.name
-        );
-        
-        const label = document.createElement("label");
-        
-        if (matchedReservation) {
-          const isMyReservation = matchedReservation.line_id === liffProfile.userId;
-          const status = matchedReservation.status || "確定";
-
-          if (isMyReservation) {
-            if (status === "保留") {
-              label.className = "relative flex items-center justify-between p-4 border-2 border-amber-300 rounded-xl cursor-not-allowed select-none bg-amber-50/75";
-              label.innerHTML = `
-                <div class="flex items-center space-x-3">
-                  <span class="w-5 h-5 rounded-full border-2 border-amber-500 bg-amber-500 flex items-center justify-center text-white text-[10px]">
-                    <i class="fa-solid fa-clock"></i>
-                  </span>
-                  <div>
-                    <p class="text-xs text-amber-700 font-bold">${slot.name}</p>
-                    <p class="text-sm font-semibold text-amber-900">${slot.label}</p>
-                  </div>
-                </div>
-                <span class="bg-amber-100 text-amber-700 border border-amber-300 text-[10px] font-bold px-2.5 py-1 rounded-md flex items-center">
-                  <i class="fa-solid fa-hourglass-half mr-1 text-xs"></i>申請中（あなた）
-                </span>
-              `;
-            } else {
-              label.className = "relative flex items-center justify-between p-4 border-2 border-blue-200 rounded-xl cursor-not-allowed select-none bg-blue-50/70";
-              label.innerHTML = `
-                <div class="flex items-center space-x-3">
-                  <span class="w-5 h-5 rounded-full border-2 border-blue-500 bg-blue-500 flex items-center justify-center text-white text-[10px]">
-                    <i class="fa-solid fa-user"></i>
-                  </span>
-                  <div>
-                    <p class="text-xs text-blue-600 font-bold">${slot.name}</p>
-                    <p class="text-sm font-semibold text-blue-900">${slot.label}</p>
-                  </div>
-                </div>
-                <span class="bg-blue-100 text-blue-700 border border-blue-300 text-[10px] font-bold px-2.5 py-1 rounded-md flex items-center">
-                  <i class="fa-solid fa-circle-check mr-1 text-xs"></i>予約中（あなた）
-                </span>
-              `;
-            }
-          } else {
-            const statusLabel = status === "保留" ? "申請中" : "予約済み";
-            label.className = "booked-slot-others relative flex items-center justify-between p-4 border border-slate-200 rounded-xl cursor-not-allowed select-none opacity-75";
-            label.innerHTML = `
-              <div class="flex items-center space-x-3">
-                <span class="w-5 h-5 rounded-full border-2 border-slate-300 bg-slate-100 flex items-center justify-center text-slate-400">
-                  <i class="fa-solid fa-ban text-[10px]"></i>
-                </span>
-                <div>
-                  <p class="text-xs text-slate-400 font-bold">${slot.name}</p>
-                  <p class="text-sm font-semibold text-slate-400">${slot.label}</p>
-                </div>
-              </div>
-              <span class="bg-red-50 text-red-500 border border-red-200 text-[10px] font-bold px-2 py-1 rounded-md">
-                <i class="fa-solid fa-xmark mr-1"></i>${statusLabel}
-              </span>
-            `;
-          }
-        } else {
-          label.className = "relative flex items-center justify-between p-4 border-2 border-slate-100 hover:border-slate-200 rounded-xl cursor-pointer bg-white transition group";
-          
-          const input = document.createElement("input");
-          input.type = "radio";
-          input.name = "time_slot";
-          input.value = slot.name;
-          input.className = "sr-only peer";
-          
-          label.appendChild(input);
-          
-          const divBorder = document.createElement("div");
-          divBorder.className = "peer-checked:border-brand-500 border-2 border-transparent rounded-xl absolute inset-0 transition pointer-events-none";
-          label.appendChild(divBorder);
-
-          const content = document.createElement("div");
-          content.className = "flex items-center space-x-3";
-          content.innerHTML = `
-            <span class="w-5 h-5 rounded-full border-2 border-slate-300 peer-checked:border-brand-500 peer-checked:bg-brand-500 flex items-center justify-center text-white text-[10px] transition">
+      if (isAnySlotBooked) {
+        // 午前・午後・夜間のうち、1つでも埋まっている場合は選択不可
+        label.className = "booked-slot-others relative flex items-center justify-between p-4 border border-slate-200 rounded-xl cursor-not-allowed select-none opacity-60";
+        label.innerHTML = `
+          <div class="flex items-center space-x-3">
+            <span class="w-5 h-5 rounded-full border-2 border-slate-300 bg-slate-100 flex items-center justify-center text-slate-400">
+              <i class="fa-solid fa-ban text-[10px]"></i>
+            </span>
+            <div>
+              <p class="text-xs text-slate-400 font-bold">${slot.name}</p>
+              <p class="text-sm font-semibold text-slate-400">${slot.label}</p>
+            </div>
+          </div>
+          <span class="bg-slate-100 text-slate-500 border border-slate-200 text-[10px] font-bold px-2 py-1 rounded-md">
+            一部予約あり選択不可
+          </span>
+        `;
+      } else {
+        // すべて空いている場合は「終日」も選択可能
+        label.className = "relative flex items-center justify-between p-4 border-2 border-emerald-100 hover:border-emerald-300 hover:shadow-sm rounded-xl cursor-pointer bg-emerald-50/30 transition-all duration-200 group";
+        label.innerHTML = `
+          <input type="radio" name="time_slot" value="終日" class="sr-only peer">
+          <div class="absolute inset-0 rounded-xl border-2 border-transparent peer-checked:border-emerald-500 peer-checked:bg-emerald-100/80 peer-checked:shadow-[0_0_0_2px_rgba(16,185,129,0.15)] transition-all duration-200 pointer-events-none"></div>
+          <div class="flex items-center space-x-3 relative z-10">
+            <span class="w-8 h-8 rounded-full border-2 border-slate-300 peer-checked:border-emerald-600 peer-checked:bg-emerald-600 flex items-center justify-center text-white text-[10px] transition-all duration-200">
               <i class="fa-solid fa-check opacity-0 peer-checked:opacity-100"></i>
             </span>
             <div>
-              <p class="text-xs text-slate-500 font-bold group-hover:text-slate-700">${slot.name}</p>
-              <p class="text-sm font-semibold text-slate-700">${slot.label}</p>
+              <p class="text-xs font-bold text-brand-700 peer-checked:text-emerald-700">${slot.name}</p>
+              <p class="text-sm font-semibold text-slate-800 peer-checked:text-emerald-900">${slot.label}</p>
             </div>
-          `;
-          label.appendChild(content);
-
-          const statusBadge = document.createElement("span");
-          statusBadge.className = "bg-brand-50 text-brand-600 border border-brand-200 text-[10px] font-bold px-2 py-1 rounded-md";
-          statusBadge.innerHTML = `<i class="fa-solid fa-circle text-[8px] mr-1 animate-pulse"></i>空枠あり`;
-          label.appendChild(statusBadge);
-        }
-        
-        container.appendChild(label);
-      });
-      
-      const slotRadios = document.querySelectorAll('input[name="time_slot"]');
-      slotRadios.forEach(radio => {
-        radio.addEventListener("change", () => {
-          document.getElementById("submitBtn").disabled = false;
-        });
-      });
-
-      document.getElementById("submitBtn").disabled = true;
+          </div>
+          <span class="relative z-10 bg-brand-100 text-brand-700 border border-brand-300 peer-checked:bg-emerald-100 peer-checked:text-emerald-800 peer-checked:border-emerald-300 text-[10px] font-bold px-2 py-1 rounded-md transition-all duration-200">
+            ${slot.name === "終日" ? "終日まとめて予約" : "空枠あり"}
+          </span>
+        `;
+      }
+      container.appendChild(label);
+      return;
     }
+
+    // --------------------------------------------------
+    // 2. 通常枠（午前・午後・夜間）の描画処理
+    // --------------------------------------------------
+    const matchedReservation = currentBookings.find(b => b.time_slot === slot.name);
+    const label = document.createElement("label");
+    
+    if (matchedReservation) {
+      const isMyReservation = matchedReservation.line_id === liffProfile?.userId;
+      const status = matchedReservation.status || "確定";
+
+      if (isMyReservation) {
+        if (status === "保留") {
+          label.className = "relative flex items-center justify-between p-4 border-2 border-amber-300 rounded-xl cursor-not-allowed select-none bg-amber-50/75";
+          label.innerHTML = `
+            <div class="flex items-center space-x-3">
+              <span class="w-5 h-5 rounded-full border-2 border-amber-500 bg-amber-500 flex items-center justify-center text-white text-[10px]">
+                <i class="fa-solid fa-clock"></i>
+              </span>
+              <div>
+                <p class="text-xs text-amber-700 font-bold">${slot.name}</p>
+                <p class="text-sm font-semibold text-amber-900">${slot.label}</p>
+              </div>
+            </div>
+            <span class="bg-amber-100 text-amber-700 border border-amber-300 text-[10px] font-bold px-2.5 py-1 rounded-md flex items-center">
+              <i class="fa-solid fa-hourglass-half mr-1 text-xs"></i>申請中（あなた）
+            </span>
+          `;
+        } else {
+          label.className = "relative flex items-center justify-between p-4 border-2 border-blue-200 rounded-xl cursor-not-allowed select-none bg-blue-50/70";
+          label.innerHTML = `
+            <div class="flex items-center space-x-3">
+              <span class="w-5 h-5 rounded-full border-2 border-blue-500 bg-blue-500 flex items-center justify-center text-white text-[10px]">
+                <i class="fa-solid fa-user"></i>
+              </span>
+              <div>
+                <p class="text-xs text-blue-600 font-bold">${slot.name}</p>
+                <p class="text-sm font-semibold text-blue-900">${slot.label}</p>
+              </div>
+            </div>
+            <span class="bg-blue-100 text-blue-700 border border-blue-300 text-[10px] font-bold px-2.5 py-1 rounded-md flex items-center">
+              <i class="fa-solid fa-circle-check mr-1 text-xs"></i>予約中（あなた）
+            </span>
+          `;
+        }
+      } else {
+        const statusLabel = status === "保留" ? "申請中" : "予約済み";
+        label.className = "booked-slot-others relative flex items-center justify-between p-4 border border-slate-200 rounded-xl cursor-not-allowed select-none opacity-75";
+        label.innerHTML = `
+          <div class="flex items-center space-x-3">
+            <span class="w-5 h-5 rounded-full border-2 border-slate-300 bg-slate-100 flex items-center justify-center text-slate-400">
+              <i class="fa-solid fa-ban text-[10px]"></i>
+            </span>
+            <div>
+              <p class="text-xs text-slate-400 font-bold">${slot.name}</p>
+              <p class="text-sm font-semibold text-slate-400">${slot.label}</p>
+            </div>
+          </div>
+          <span class="bg-red-50 text-red-500 border border-red-200 text-[10px] font-bold px-2 py-1 rounded-md">
+            <i class="fa-solid fa-xmark mr-1"></i>${statusLabel}
+          </span>
+        `;
+      }
+    } else {
+      // 予約が入っていない空き枠
+      label.className = "relative flex items-center justify-between p-4 border-2 border-slate-100 hover:border-emerald-200 hover:shadow-sm rounded-xl cursor-pointer bg-white transition-all duration-200 group";
+      
+      label.innerHTML = `
+        <input type="radio" name="time_slot" value="${slot.name}" class="sr-only peer">
+        <div class="absolute inset-0 rounded-xl border-2 border-transparent peer-checked:border-emerald-500 peer-checked:bg-emerald-50/80 peer-checked:shadow-[0_0_0_2px_rgba(16,185,129,0.15)] transition-all duration-200 pointer-events-none"></div>
+        <div class="flex items-center space-x-3 relative z-10">
+          <span class="w-8 h-8 rounded-full border-2 border-slate-300 peer-checked:border-emerald-600 peer-checked:bg-emerald-600 flex items-center justify-center text-white text-[10px] transition-all duration-200">
+            <i class="fa-solid fa-check opacity-0 peer-checked:opacity-100"></i>
+          </span>
+          <div>
+            <p class="text-xs text-slate-500 font-bold group-hover:text-slate-700 peer-checked:text-emerald-700">${slot.name}</p>
+            <p class="text-sm font-semibold text-slate-700 peer-checked:text-emerald-900">${slot.label}</p>
+          </div>
+        </div>
+        <span class="relative z-10 bg-brand-50 text-brand-600 border border-brand-200 peer-checked:bg-emerald-100 peer-checked:text-emerald-800 peer-checked:border-emerald-300 text-[10px] font-bold px-2 py-1 rounded-md transition-all duration-200">
+          <i class="fa-solid fa-circle text-[8px] mr-1 animate-pulse"></i>空枠あり
+        </span>
+      `;
+    }
+    
+    container.appendChild(label);
+  });
+
+  // ラジオボタンの変更イベント設定（タップされたら送信ボタンを有効化）
+  const slotRadios = document.querySelectorAll('input[name="time_slot"]:not([disabled])');
+  slotRadios.forEach(radio => {
+    radio.addEventListener("change", () => {
+      document.getElementById("submitBtn").disabled = false;
+    });
+  });
+
+  document.getElementById("submitBtn").disabled = true;
+}    
 
     function renderReservationList() {
       const container = document.getElementById("reservationList");
+      const safeBookedData = Array.isArray(bookedData) ? bookedData : [];
       container.innerHTML = "";
 
-      if (bookedData.length === 0) {
+      if (safeBookedData.length === 0) {
         container.innerHTML = `<p class="text-slate-400 text-xs text-center py-6">現在登録されている予約はありません</p>`;
         return;
       }
 
-      const sorted = [...bookedData].sort((a, b) => new Date(b.date) - new Date(a.date));
+      const sorted = [...safeBookedData].sort((a, b) => new Date(b.date) - new Date(a.date));
 
       sorted.forEach(item => {
         const isMine = item.line_id === liffProfile.userId;
@@ -900,48 +960,54 @@
     function renderCalendar() {
       setCalendarLoading(true);
 
-      const year = currentDate.getFullYear();
-      const month = currentDate.getMonth();
+      try {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
 
-      document.getElementById("currentMonthYear").innerText = `${year}年${month + 1}月`;
+        document.getElementById("currentMonthYear").innerText = `${year}年${month + 1}月`;
 
-      const grid = document.getElementById("calendarGrid");
-      grid.innerHTML = "";
+        const grid = document.getElementById("calendarGrid");
+        grid.innerHTML = "";
 
-      const firstDay = new Date(year, month, 1);
-      const startWeekDay = firstDay.getDay();
-      const lastDay = new Date(year, month + 1, 0).getDate();
-      const prevMonthLastDay = new Date(year, month, 0).getDate();
+        const firstDay = new Date(year, month, 1);
+        const startWeekDay = firstDay.getDay();
+        const lastDay = new Date(year, month + 1, 0).getDate();
+        const prevMonthLastDay = new Date(year, month, 0).getDate();
 
-      for (let i = startWeekDay - 1; i >= 0; i--) {
-        const day = prevMonthLastDay - i;
-        const cell = createDayCell(year, month - 1, day, false);
-        grid.appendChild(cell);
+        for (let i = startWeekDay - 1; i >= 0; i--) {
+          const day = prevMonthLastDay - i;
+          const cell = createDayCell(year, month - 1, day, false);
+          grid.appendChild(cell);
+        }
+
+        for (let day = 1; day <= lastDay; day++) {
+          const cell = createDayCell(year, month, day, true);
+          grid.appendChild(cell);
+        }
+
+        const totalCells = grid.children.length;
+        const nextMonthCellsNeeded = 42 - totalCells;
+        for (let day = 1; day <= nextMonthCellsNeeded; day++) {
+          const cell = createDayCell(year, month + 1, day, false);
+          grid.appendChild(cell);
+        }
+
+        const currentMonthCells = Array.from(grid.querySelectorAll('.calendar-day-cell[data-current-month="true"]'));
+        const currentMonthDates = currentMonthCells.map(cell => cell.dataset.date);
+        const todayStr = formatDateString(new Date());
+
+        if (!selectedCalendarDate || !currentMonthDates.includes(selectedCalendarDate)) {
+          selectedCalendarDate = currentMonthDates.includes(todayStr) ? todayStr : currentMonthDates[0] || null;
+        }
+
+        highlightSelectedCalendarCell();
+        renderSelectedDayDetails(selectedCalendarDate);
+      } catch (error) {
+        console.error("カレンダー描画エラー:", error);
+        showToast("カレンダー描画に失敗しました", "error");
+      } finally {
+        setCalendarLoading(false);
       }
-
-      for (let day = 1; day <= lastDay; day++) {
-        const cell = createDayCell(year, month, day, true);
-        grid.appendChild(cell);
-      }
-
-      const totalCells = grid.children.length;
-      const nextMonthCellsNeeded = 42 - totalCells;
-      for (let day = 1; day <= nextMonthCellsNeeded; day++) {
-        const cell = createDayCell(year, month + 1, day, false);
-        grid.appendChild(cell);
-      }
-
-      const currentMonthCells = Array.from(grid.querySelectorAll('.calendar-day-cell[data-current-month="true"]'));
-      const currentMonthDates = currentMonthCells.map(cell => cell.dataset.date);
-      const todayStr = formatDateString(new Date());
-
-      if (!selectedCalendarDate || !currentMonthDates.includes(selectedCalendarDate)) {
-        selectedCalendarDate = currentMonthDates.includes(todayStr) ? todayStr : currentMonthDates[0] || null;
-      }
-
-      highlightSelectedCalendarCell();
-      renderSelectedDayDetails(selectedCalendarDate);
-      setCalendarLoading(false);
     }
 
     function changeMonth(delta) {
@@ -1017,11 +1083,12 @@
     }
 
     function getDayRoomSlotSummary(dateStr) {
+      const safeBookedData = Array.isArray(bookedData) ? bookedData : [];
       const summary = {};
       ROOM_TYPES.forEach(roomName => {
         summary[roomName] = {};
         TIME_SLOTS_MASTER.forEach(slotName => {
-          summary[roomName][slotName] = bookedData.some(r =>
+          summary[roomName][slotName] = safeBookedData.some(r =>
             r.date === dateStr &&
             r.room === roomName &&
             r.time_slot === slotName &&
@@ -1061,10 +1128,10 @@
 
       if (!dateStr) {
         detailTitle.innerText = "日付をタップすると詳細を表示します";
-        const roomLegendSpans0 = ROOM_TYPES.map(r => `<span class="inline-flex items-center gap-1.5"><i class="${ROOM_ICONS[r]}"></i>${r}</span>`).join("");
         detailList.innerHTML = `
-          <div class="flex items-center gap-3 text-[11px] font-bold text-slate-600 flex-wrap">
-            ${roomLegendSpans0}
+          <div class="flex items-center gap-3 text-[11px] font-bold text-slate-600">
+            <span class="inline-flex items-center gap-1.5"><i class="fa-solid fa-users text-emerald-600"></i>小会議室</span>
+            <span class="inline-flex items-center gap-1.5"><i class="fa-solid fa-people-roof text-blue-600"></i>大広間</span>
             <span class="inline-flex items-center gap-1.5"><span class="text-emerald-700">〇</span>空き</span>
             <span class="inline-flex items-center gap-1.5"><span class="text-red-600">×</span>予約済</span>
           </div>
@@ -1083,28 +1150,35 @@
       const dayRoomSummary = getDayRoomSlotSummary(dateStr);
 
       const slotRowsHtml = TIME_SLOTS_MASTER.map(slotName => {
-        const roomStatusHtml = ROOM_TYPES.map(roomName => {
-          const isBooked = dayRoomSummary[roomName][slotName];
-          const statusClass = isBooked ? "text-red-600" : "text-emerald-700";
-          return `<span class="inline-flex items-center gap-1 ${statusClass}"><i class="${ROOM_ICONS[roomName]}"></i><span>${isBooked ? "×" : "〇"}</span></span>`;
-        }).join("");
+        const isSmallRoomBooked = dayRoomSummary["小会議室"][slotName];
+        const isLargeRoomBooked = dayRoomSummary["大広間"][slotName];
+
+        const smallRoomStatusClass = isSmallRoomBooked ? "text-red-600" : "text-emerald-700";
+        const largeRoomStatusClass = isLargeRoomBooked ? "text-red-600" : "text-emerald-700";
 
         return `
           <div class="rounded-lg border border-slate-200 bg-white px-2.5 py-2">
             <div class="flex items-center justify-between gap-2">
               <span class="text-sm font-extrabold text-slate-800 min-w-[40px]">${slotName}</span>
               <div class="flex items-center gap-3 text-xs font-bold">
-                ${roomStatusHtml}
+                <span class="inline-flex items-center gap-1 ${smallRoomStatusClass}">
+                  <i class="fa-solid fa-users"></i>
+                  <span>${isSmallRoomBooked ? "×" : "〇"}</span>
+                </span>
+                <span class="inline-flex items-center gap-1 ${largeRoomStatusClass}">
+                  <i class="fa-solid fa-people-roof"></i>
+                  <span>${isLargeRoomBooked ? "×" : "〇"}</span>
+                </span>
               </div>
             </div>
           </div>
         `;
       }).join("");
 
-      const roomLegendSpans = ROOM_TYPES.map(r => `<span class="inline-flex items-center gap-1.5"><i class="${ROOM_ICONS[r]}"></i>${r}</span>`).join("");
       detailList.innerHTML = `
-        <div class="flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5 text-[11px] font-bold text-slate-600 flex-wrap">
-          ${roomLegendSpans}
+        <div class="flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5 text-[11px] font-bold text-slate-600">
+          <span class="inline-flex items-center gap-1.5"><i class="fa-solid fa-users text-emerald-600"></i>小会議室</span>
+          <span class="inline-flex items-center gap-1.5"><i class="fa-solid fa-people-roof text-blue-600"></i>大広間</span>
           <span class="inline-flex items-center gap-1.5"><span class="text-emerald-700">〇</span>空き</span>
           <span class="inline-flex items-center gap-1.5"><span class="text-red-600">×</span>予約済</span>
         </div>
@@ -1133,94 +1207,92 @@
       updateTimeSlots();
     }
 
-    async function submitReservation(e) {
-      e.preventDefault();
-      
-      const selectedDate = document.getElementById("reserveDate").value;
-      const selectedRoom = document.querySelector('input[name="room"]:checked')?.value;
-      const selectedSlot = document.querySelector('input[name="time_slot"]:checked')?.value;
-      
-      if (!selectedSlot) {
-        showToast("❌ 時間帯を選択してください", "error");
-        return;
-      }
+async function submitReservation(e) {
+  e.preventDefault();
+  
+  const selectedDate = document.getElementById("reserveDate").value;
+  const selectedRoom = document.querySelector('input[name="room"]:checked')?.value;
+  const selectedSlot = document.querySelector('input[name="time_slot"]:checked')?.value;
+  
+  if (!selectedSlot) {
+    showToast("❌ 時間帯を選択してください", "error");
+    return;
+  }
 
-      const submitBtn = document.getElementById("submitBtn");
-      const originalBtnHTML = submitBtn.innerHTML;
-      submitBtn.disabled = true;
-      submitBtn.innerHTML = `<i class="fa-solid fa-spinner animate-spin mr-2"></i>申請中...`;
+  // ★「終日」が選ばれた場合は ["午前", "午後", "夜間"] に展開
+  const targetSlots = (selectedSlot === "終日") 
+    ? ["午前", "午後", "夜間"] 
+    : [selectedSlot];
 
+  const submitBtn = document.getElementById("submitBtn");
+  const originalBtnHTML = submitBtn.innerHTML;
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = `<i class="fa-solid fa-spinner animate-spin mr-2"></i>申請中...`;
+
+  // --- ローカルテストモードの処理 ---
+  if (isLocal) {
+    setTimeout(() => {
+      // 展開されたすべてのスロットを追加
+      targetSlots.forEach(slot => {
+        bookedData.push({
+          date: selectedDate,
+          room: selectedRoom,
+          time_slot: slot, // "午前", "午後", "夜間" それぞれが個別に登録される
+          line_id: liffProfile.userId,
+          name: memberProfile ? memberProfile.fullName : liffProfile.displayName,
+          status: "保留"
+        });
+      });
+
+      saveLocalData();
+      showToast("🎉 【終日】予約申請を送信しました！");
+      
+      updateTimeSlots();
+      renderReservationList();
+      
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = originalBtnHTML;
+    }, 1000);
+
+  // --- 本番環境（GAS連携）の処理 ---
+  } else {
+    try {
+      // バックエンド(GAS)へ渡す payload に targetSlots 配列を持たせる
       const payload = {
         line_id: liffProfile.userId,
         line_name: liffProfile.displayName,
         date: selectedDate,
         room: selectedRoom,
-        time_slot: selectedSlot,
+        time_slots: targetSlots, // ★ 配列として送信
         request: document.getElementById("request")?.value?.trim() || "",
-        liff_token: isLocal ? "LOCAL_TEST_TOKEN" : (liff.getAccessToken() || "")
+        liff_token: liff.getAccessToken() || ""
       };
 
-      if (isLocal) {
-        setTimeout(() => {
-          const dup = bookedData.some(b => b.date === selectedDate && b.room === selectedRoom && b.time_slot === selectedSlot && (b.status === "確定" || b.status === "保留"));
-          if (dup) {
-            showToast("⚠️ 既に申請・予約が完了している時間帯です", "error");
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = originalBtnHTML;
-            return;
-          }
-
-          bookedData.push({
-            date: selectedDate,
-            room: selectedRoom,
-            time_slot: selectedSlot,
-            line_id: liffProfile.userId,
-            name: memberProfile ? memberProfile.fullName : liffProfile.displayName,
-            status: "保留"
-          });
-
-          saveLocalData();
-          showToast("🎉 【ローカル模擬】予約申請を送信しました！");
-          
-          updateTimeSlots();
-          renderReservationList();
-          
-          submitBtn.disabled = false;
-          submitBtn.innerHTML = originalBtnHTML;
-        }, 1000);
-
+      const response = await fetch(GAS_URL, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      const result = await response.json();
+      
+      if (result.status === "success") {
+        showToast("🎉 予約申請を送信しました！");
+        submitBtn.innerHTML = `<i class="fa-solid fa-check mr-2"></i>送信完了`;
+        setTimeout(() => liff.closeWindow(), 2000);
       } else {
-        try {
-          const response = await fetch(GAS_URL, {
-            method: "POST",
-            body: JSON.stringify(payload)
-          });
-          const result = await response.json();
-          
-          if (result.status === "success") {
-            showToast("🎉 予約申請を送信しました！");
-            submitBtn.innerHTML = `<i class="fa-solid fa-check mr-2"></i>送信完了`;
-            
-            setTimeout(() => {
-              liff.closeWindow();
-            }, 2000);
-
-          } else {
-            showToast("⚠️ エラー: " + result.message, "error");
-            await fetchReservations();
-            updateTimeSlots();
-            renderReservationList();
-            
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = originalBtnHTML;
-          }
-        } catch (error) {
-          showToast("❌ 通信エラーが発生しました", "error");
-          submitBtn.disabled = false;
-          submitBtn.innerHTML = originalBtnHTML;
-        }
+        showToast("⚠️ エラー: " + result.message, "error");
+        await fetchReservations();
+        updateTimeSlots();
+        renderReservationList();
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalBtnHTML;
       }
+    } catch (error) {
+      showToast("❌ 通信エラーが発生しました", "error");
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = originalBtnHTML;
     }
+  }
+}    
 
     function showToast(message, type = "success") {
       const toast = document.getElementById("toast");
@@ -1228,7 +1300,7 @@
       const toastIcon = document.getElementById("toastIcon");
 
       toastMessage.innerText = message;
-      
+
       if (type === "success") {
         toastIcon.className = "w-8 h-8 rounded-full bg-brand-500/20 text-brand-500 flex items-center justify-center";
         toastIcon.innerHTML = `<i class="fa-solid fa-check"></i>`;
@@ -1240,7 +1312,8 @@
       toast.classList.remove("translate-y-20", "opacity-0", "pointer-events-none");
       toast.classList.add("translate-y-0", "opacity-100");
 
-      setTimeout(() => {
+      clearTimeout(showToast.timer);
+      showToast.timer = setTimeout(() => {
         hideToast();
       }, 4000);
     }
