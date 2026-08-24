@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- LINE LIFF SDK -->
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="../common/app-config.js"></script>
   <script src="../common/ui-patterns.js"></script>
   <script>
     tailwind.config = {
@@ -465,8 +466,9 @@
     // ----------------------------------------------------
     // 設定
     // ----------------------------------------------------
-    const LIFF_ID = "2008962357-gLXhtSi2";
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbz48WTnbJlYOFc_bog41yu0KHXCUdEseuIc__LeEidJ9YbjkaMu59k32UwQvVJItGGk/exec"; 
+    const PAGE_CONFIG = (window.AppConfig && window.AppConfig.getPageConfig("bookroom")) || {};
+    const LIFF_ID = PAGE_CONFIG.liffId || "2008962357-gLXhtSi2";
+    const GAS_URL = PAGE_CONFIG.gasUrl || "https://script.google.com/macros/s/AKfycbz48WTnbJlYOFc_bog41yu0KHXCUdEseuIc__LeEidJ9YbjkaMu59k32UwQvVJItGGk/exec";
 
     let liffProfile = null;
     let bookedData = []; 

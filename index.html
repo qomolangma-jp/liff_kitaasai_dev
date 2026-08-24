@@ -358,11 +358,13 @@
   </div>
 
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="./common/app-config.js"></script>
   <script>
     // ※ ご自身の公開URLに変更してください
-    
-    const LIFF_ID = '2008962357-ePaQmDO9'; // あなたのLIFF ID
-		const GAS_URL = "https://script.google.com/macros/s/AKfycbz48WTnbJlYOFc_bog41yu0KHXCUdEseuIc__LeEidJ9YbjkaMu59k32UwQvVJItGGk/exec"; 
+
+    const PAGE_CONFIG = (window.AppConfig && window.AppConfig.getPageConfig('profile')) || {};
+    const LIFF_ID = PAGE_CONFIG.liffId || '2008893549-jeCNKx4Y';
+		const GAS_URL = PAGE_CONFIG.gasUrl || "https://script.google.com/macros/s/AKfycbz48WTnbJlYOFc_bog41yu0KHXCUdEseuIc__LeEidJ9YbjkaMu59k32UwQvVJItGGk/exec";
 
     function isLocalEnvironment() {
       return window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
