@@ -64,6 +64,14 @@ function handleBookroomSubmit(payload) {
   var now = new Date();
   var batchId = "BATCH_" + now.getTime();
 
+  recordWebhookDiagnostic("info", "bookroom.submit.start", "Bookroom submit accepted", {
+    line_id: lineId,
+    date: date,
+    room: room,
+    slots: targetSlots,
+    batch_id: batchId
+  });
+
   targetSlots.forEach(function (slot) {
     sheet.appendRow([
       now,
@@ -156,7 +164,16 @@ function sendBookroomApplicantReceipt(lineUserId, info) {
 
 function notifyBookroomAdmins(batchId, info) {
   var adminIds = getBookroomAdminIds();
+  recordWebhookDiagnostic("info", "bookroom.admins.resolved", "Bookroom admin lookup", {
+    batch_id: String(batchId || ""),
+    admin_count: adminIds ? adminIds.length : 0,
+    admin_ids: adminIds || []
+  });
+
   if (!adminIds || adminIds.length === 0) {
+    recordWebhookDiagnostic("warn", "bookroom.admins.empty", "No admins found for bookroom alert", {
+      batch_id: String(batchId || "")
+    });
     return;
   }
 
@@ -198,13 +215,22 @@ function notifyBookroomAdmins(batchId, info) {
 
   adminIds.forEach(function (adminId) {
     var uid = String(adminId || "").trim();
-    if (!uid) return;
+    if (!uid) {
+      recordWebhookDiagnostic("warn", "bookroom.admin.uid.empty", "Admin uid is empty", {
+        batch_id: String(batchId || "")
+      });
+      return;
+    }
     sendLinePushMessage(uid, [summaryText, templateMessage]);
   });
 }
 
 function notifyBookroomDecisionToApplicant(result, action) {
   if (!result || !result.applicantId) {
+    recordWebhookDiagnostic("warn", "bookroom.decision.skip", "Decision notify skipped: applicantId missing", {
+      action: String(action || ""),
+      result: result || {}
+    });
     return;
   }
 
@@ -237,6 +263,11 @@ function sendLinePushMessage(toUserId, messages) {
     : "";
 
   if (!uid || !token) {
+    recordWebhookDiagnostic("warn", "bookroom.push.skip", "Push skipped: uid or token missing", {
+      has_uid: !!uid,
+      has_token: !!token,
+      uid: uid
+    });
     return;
   }
 
@@ -245,6 +276,9 @@ function sendLinePushMessage(toUserId, messages) {
     messages: Array.isArray(messages) ? messages : []
   };
   if (!payload.messages.length) {
+    recordWebhookDiagnostic("warn", "bookroom.push.skip", "Push skipped: messages empty", {
+      to: uid
+    });
     return;
   }
 
@@ -265,6 +299,12 @@ function sendLinePushMessage(toUserId, messages) {
         to: uid,
         code: code,
         body: res.getContentText() || ""
+      });
+    } else {
+      recordWebhookDiagnostic("info", "bookroom.push.success", "Push message sent", {
+        to: uid,
+        code: code,
+        message_count: payload.messages.length
       });
     }
   } catch (err) {
