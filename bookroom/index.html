@@ -470,6 +470,17 @@
     const LIFF_ID = PAGE_CONFIG.liffId || "2008893549-vbVJOMEv";
     const GAS_URL = PAGE_CONFIG.gasUrl || "https://script.google.com/macros/s/AKfycbz48WTnbJlYOFc_bog41yu0KHXCUdEseuIc__LeEidJ9YbjkaMu59k32UwQvVJItGGk/exec";
 
+    function stringifyInitError(error) {
+      if (error === null || error === undefined) return "unknown error";
+      if (typeof error === "string") return error;
+      if (error.message) return String(error.message);
+      try {
+        return JSON.stringify(error);
+      } catch (_) {
+        return String(error);
+      }
+    }
+
     let liffProfile = null;
     let bookedData = []; 
     let memberProfile = null; 
@@ -602,7 +613,15 @@ async function initApp() {
           
         } catch (error) {
           setCalendarLoading(false);
-          showToast("❌ 初期化に失敗しました: " + error, "error");
+          const errText = stringifyInitError(error);
+          console.error("LIFF初期化エラー", {
+            liffId: LIFF_ID,
+            gasUrl: GAS_URL,
+            href: window.location.href,
+            isAppConfigLoaded: !!window.AppConfig,
+            error: error
+          });
+          showToast("❌ 初期化に失敗しました: " + errText, "error");
         }
       }
     }    

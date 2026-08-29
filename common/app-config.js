@@ -7,7 +7,7 @@
       gasUrl: SHARED_GAS_URL
     },
     bookroom: {
-      liffId: "2008962357-gLXhtSi2",
+      liffId: "2008893549-vbVJOMEv",
       gasUrl: SHARED_GAS_URL
     },
     notice: {
