@@ -78,6 +78,24 @@ function handleBookroomSubmit(payload) {
     ]);
   });
 
+  // 申請者へ受付通知
+  sendBookroomApplicantReceipt(lineId, {
+    date: date,
+    room: room,
+    slots: targetSlots,
+    request: requestText
+  });
+
+  // 管理者へ承認依頼（postback ボタン付き）
+  notifyBookroomAdmins(batchId, {
+    applicantId: lineId,
+    applicantName: realName || lineName || "申請者",
+    date: date,
+    room: room,
+    slots: targetSlots,
+    request: requestText
+  });
+
   return {
     status: "success",
     batch_id: batchId,
@@ -92,13 +110,167 @@ function processBookroomApprovalByBatch(batchId, action) {
 
   var toStatus = action === "approve" ? "確定" : "却下";
   var updated = 0;
+  var firstMatched = null;
+  var slots = [];
 
   for (var i = 1; i < values.length; i++) {
     if (String(values[i][8] || "").trim() !== String(batchId || "").trim()) continue;
+    if (!firstMatched) {
+      firstMatched = values[i];
+    }
+    slots.push(String(values[i][4] || "").trim());
     if (String(values[i][7] || "").trim() !== "保留") continue;
     sheet.getRange(i + 1, 8).setValue(toStatus);
     updated++;
   }
 
-  return { updated: updated, status: toStatus };
+  var uniqueSlots = Array.from(new Set(slots.filter(Boolean)));
+  return {
+    updated: updated,
+    status: toStatus,
+    applicantId: firstMatched ? String(firstMatched[1] || "").trim() : "",
+    applicantName: firstMatched ? String(firstMatched[2] || "").trim() : "",
+    date: firstMatched ? Utilities.formatDate(new Date(firstMatched[3]), "JST", "yyyy-MM-dd") : "",
+    room: firstMatched ? String(firstMatched[5] || "").trim() : "",
+    slots: uniqueSlots,
+    batchId: String(batchId || "")
+  };
+}
+
+function sendBookroomApplicantReceipt(lineUserId, info) {
+  var uid = String(lineUserId || "").trim();
+  if (!uid) return;
+
+  var slots = Array.isArray(info.slots) ? info.slots : [];
+  var slotText = slots.length === 3 ? "終日 (午前・午後・夜間)" : slots.join(", ");
+  var requestText = String(info.request || "").trim() || "なし";
+  var text = "【北浅井公民館】予約申請を受け付けました。\n" +
+    "管理者の確認後に結果を通知します。\n\n" +
+    "■日付: " + String(info.date || "") + "\n" +
+    "■施設: " + String(info.room || "") + "\n" +
+    "■時間帯: " + slotText + "\n" +
+    "■要望: " + requestText;
+
+  sendLinePushMessage(uid, [{ type: "text", text: text }]);
+}
+
+function notifyBookroomAdmins(batchId, info) {
+  var adminIds = getBookroomAdminIds();
+  if (!adminIds || adminIds.length === 0) {
+    return;
+  }
+
+  var slotText = (Array.isArray(info.slots) && info.slots.length === 3)
+    ? "終日(午前/午後/夜間)"
+    : (Array.isArray(info.slots) ? info.slots.join(",") : "");
+  var shortName = String(info.applicantName || "申請者");
+  var text = "申請者:" + shortName + "\n日付:" + String(info.date || "") + "\n施設:" + String(info.room || "") + "\n時間:" + slotText;
+  if (text.length > 160) {
+    text = text.substring(0, 157) + "...";
+  }
+
+  var templateMessage = {
+    type: "template",
+    altText: "公民館予約の承認依頼",
+    template: {
+      type: "buttons",
+      title: "公民館予約 承認依頼",
+      text: text,
+      actions: [
+        {
+          type: "postback",
+          label: "承認",
+          data: "action=approve&batchId=" + encodeURIComponent(String(batchId || ""))
+        },
+        {
+          type: "postback",
+          label: "却下",
+          data: "action=reject&batchId=" + encodeURIComponent(String(batchId || ""))
+        }
+      ]
+    }
+  };
+
+  var summaryText = {
+    type: "text",
+    text: "新しい予約申請です。下のボタンから承認/却下を選択してください。"
+  };
+
+  adminIds.forEach(function (adminId) {
+    var uid = String(adminId || "").trim();
+    if (!uid) return;
+    sendLinePushMessage(uid, [summaryText, templateMessage]);
+  });
+}
+
+function notifyBookroomDecisionToApplicant(result, action) {
+  if (!result || !result.applicantId) {
+    return;
+  }
+
+  var uid = String(result.applicantId || "").trim();
+  if (!uid) return;
+
+  var slots = Array.isArray(result.slots) ? result.slots : [];
+  var slotText = slots.length === 3 ? "終日 (午前・午後・夜間)" : slots.join(", ");
+  var approved = action === "approve";
+
+  var text = approved
+    ? "【北浅井公民館】予約申請が承認されました。\n\n"
+    : "【北浅井公民館】予約申請は却下となりました。\n\n";
+
+  text += "■日付: " + String(result.date || "") + "\n" +
+    "■施設: " + String(result.room || "") + "\n" +
+    "■時間帯: " + slotText;
+
+  if (!approved) {
+    text += "\n\n別の日時で再申請をお願いします。";
+  }
+
+  sendLinePushMessage(uid, [{ type: "text", text: text }]);
+}
+
+function sendLinePushMessage(toUserId, messages) {
+  var uid = String(toUserId || "").trim();
+  var token = APP_CONFIG.line && APP_CONFIG.line.channelAccessToken
+    ? String(APP_CONFIG.line.channelAccessToken).trim()
+    : "";
+
+  if (!uid || !token) {
+    return;
+  }
+
+  var payload = {
+    to: uid,
+    messages: Array.isArray(messages) ? messages : []
+  };
+  if (!payload.messages.length) {
+    return;
+  }
+
+  try {
+    var res = UrlFetchApp.fetch("https://api.line.me/v2/bot/message/push", {
+      method: "post",
+      contentType: "application/json; charset=UTF-8",
+      headers: {
+        Authorization: "Bearer " + token
+      },
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    });
+
+    var code = res.getResponseCode();
+    if (code < 200 || code >= 300) {
+      recordWebhookDiagnostic("error", "bookroom.push.error", "Push message failed", {
+        to: uid,
+        code: code,
+        body: res.getContentText() || ""
+      });
+    }
+  } catch (err) {
+    recordWebhookDiagnostic("error", "bookroom.push.exception", "Push message exception", {
+      to: uid,
+      error: String(err)
+    });
+  }
 }

@@ -68,6 +68,15 @@ Webhook notes:
 - In GAS Web App, request headers may be unavailable depending on runtime/route.
    Keep LINE_SIGNATURE_VERIFY_REQUIRED=false unless you confirmed X-Line-Signature is readable.
 
+Bookroom push notification notes:
+
+- Reservation submit now sends a receipt message to applicant and approval request to admins.
+- Admin approval/reject postback sends decision message to applicant.
+- Required for these notifications:
+   - LINE_CHANNEL_ACCESS_TOKEN must be valid (Messaging API channel token)
+   - Member sheet must have alert column containing "bookroom" for admin rows
+   - Applicant and admins must have friended the official LINE account
+
 ## Action mapping
 
 GET:

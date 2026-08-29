@@ -205,6 +205,9 @@ function handlePostbackEvent(event, requestId, index) {
   }
 
   var result = processBookroomApprovalByBatch(params.batchId, params.action);
+  if (result && result.updated > 0) {
+    notifyBookroomDecisionToApplicant(result, params.action);
+  }
   recordWebhookDiagnostic("info", "event.postback.processed", "Postback action processed", {
     request_id: requestId || "",
     index: index,
