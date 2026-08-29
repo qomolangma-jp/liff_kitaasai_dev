@@ -63,6 +63,9 @@ function routeGet(action, e) {
   var p = (e && e.parameter) ? e.parameter : {};
 
   switch (action) {
+    case "diagnostics":
+      return jsonResponse(handleDiagnosticsStatus());
+
     case "member_check":
       return jsonResponse(handleMemberCheck({
         userId: p.user_id || p.uid || "",
@@ -94,6 +97,9 @@ function routeGet(action, e) {
 
 function routePost(action, e, payload) {
   switch (action) {
+    case "diagnostics_write":
+      return jsonResponse(handleDiagnosticsWrite(payload));
+
     case "bookroom_submit": {
       recordWebhookDiagnostic("info", "bookroom.route.enter", "Bookroom submit route entered", {
         has_line_id: !!(payload && payload.line_id),

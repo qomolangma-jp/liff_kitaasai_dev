@@ -94,6 +94,15 @@ POST:
 - action=attendance_answer
 - action=member_profile_upsert
 - action=log
+- action=diagnostics_write
+
+Diagnostics:
+
+- GET `?action=diagnostics`
+   - Returns runtime config flags and connectivity checks for bookroom/chat sheets.
+   - Useful when reservation succeeds but webhook_log/push do not work.
+- POST `{"action":"diagnostics_write","note":"manual test"}`
+   - Writes a `diagnostics.manual` row to webhook_log to verify write path.
 
 ## Backward compatibility handled by router
 
