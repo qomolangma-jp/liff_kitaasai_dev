@@ -35,6 +35,7 @@ Set these before deployment:
 - SHEET_MEMBER_MAIN (default: 名簿)
 - SHEET_BOOKROOM_MAIN (default: 予約台帳)
 - SHEET_CHAT_LOG (default: chat)
+- SHEET_WEBHOOK_LOG (default: webhook_log)
 - SHEET_NOTICE_ITEMS (default: monthly_items)
 - SHEET_AUDIT_LOG (default: access_log)
 - SHEET_ATTENDANCE_QUESTIONS (default: questions)

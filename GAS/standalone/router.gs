@@ -103,14 +103,33 @@ function routePost(action, e, payload) {
     case "line_webhook": {
       var bodyString = e && e.postData && e.postData.contents ? e.postData.contents : "{}";
       var signature = e && e.headers ? (e.headers["X-Line-Signature"] || e.headers["x-line-signature"]) : "";
+      var requestId = Utilities.getUuid();
+
+      recordWebhookDiagnostic("info", "route.enter", "Webhook request received", {
+        request_id: requestId,
+        event_count: Array.isArray(payload.events) ? payload.events.length : 0,
+        has_signature: !!signature,
+        has_secret_param: !!(e && e.parameter && e.parameter.secret),
+        has_body: !!bodyString
+      });
 
       if (!validateWebhookSecret(e)) {
+        recordWebhookDiagnostic("warn", "route.secret.reject", "Webhook secret mismatch", {
+          request_id: requestId
+        });
         return errorResponse(action, "Webhook secret mismatch", "");
       }
       if (!validateLineSignature(bodyString, signature)) {
+        recordWebhookDiagnostic("warn", "route.signature.reject", "Invalid LINE signature", {
+          request_id: requestId
+        });
         return errorResponse(action, "Invalid LINE signature", "");
       }
-      return jsonResponse(handleLineWebhook(payload.events || []));
+
+      recordWebhookDiagnostic("info", "route.accept", "Webhook checks passed", {
+        request_id: requestId
+      });
+      return jsonResponse(handleLineWebhook(payload.events || [], { requestId: requestId }));
     }
 
     case "attendance_answer":
