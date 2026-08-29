@@ -43,8 +43,16 @@ Set these before deployment:
 - LINE_CHANNEL_ACCESS_TOKEN (optional if push API is not used)
 - LINE_CHANNEL_SECRET
 - WEBHOOK_SECRET (optional but recommended)
+- LINE_SIGNATURE_VERIFY_REQUIRED (default: false)
 - LIFF_TOKEN_VERIFY_ENABLED (true/false)
 - REGISTER_FORM_URL
+
+Webhook notes:
+
+- If WEBHOOK_SECRET is set, configure LINE Developers webhook URL as:
+   https://script.google.com/macros/s/XXXXX/exec?secret=YOUR_SECRET
+- In GAS Web App, request headers may be unavailable depending on runtime/route.
+   Keep LINE_SIGNATURE_VERIFY_REQUIRED=false unless you confirmed X-Line-Signature is readable.
 
 ## Action mapping
 

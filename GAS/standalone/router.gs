@@ -119,11 +119,24 @@ function routePost(action, e, payload) {
         });
         return errorResponse(action, "Webhook secret mismatch", "");
       }
-      if (!validateLineSignature(bodyString, signature)) {
+
+      if (signature) {
+        if (!validateLineSignature(bodyString, signature)) {
+          recordWebhookDiagnostic("warn", "route.signature.reject", "Invalid LINE signature", {
+            request_id: requestId
+          });
+          return errorResponse(action, "Invalid LINE signature", "");
+        }
+      } else if (APP_CONFIG.auth.lineSignatureVerifyRequired) {
         recordWebhookDiagnostic("warn", "route.signature.reject", "Invalid LINE signature", {
+          request_id: requestId,
+          reason: "header_missing"
+        });
+        return errorResponse(action, "LINE signature header is missing", "Set LINE_SIGNATURE_VERIFY_REQUIRED=false for GAS fallback");
+      } else {
+        recordWebhookDiagnostic("warn", "route.signature.skip", "LINE signature header missing, skipped by config", {
           request_id: requestId
         });
-        return errorResponse(action, "Invalid LINE signature", "");
       }
 
       recordWebhookDiagnostic("info", "route.accept", "Webhook checks passed", {

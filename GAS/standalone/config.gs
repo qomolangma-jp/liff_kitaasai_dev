@@ -26,7 +26,8 @@ var APP_CONFIG = (function buildConfig() {
       webhookSecret: get("WEBHOOK_SECRET", "")
     },
     auth: {
-      liffTokenVerifyEnabled: get("LIFF_TOKEN_VERIFY_ENABLED", "false").toLowerCase() === "true"
+      liffTokenVerifyEnabled: get("LIFF_TOKEN_VERIFY_ENABLED", "false").toLowerCase() === "true",
+      lineSignatureVerifyRequired: get("LINE_SIGNATURE_VERIFY_REQUIRED", "false").toLowerCase() === "true"
     },
     spreadsheets: {
       member: get("SS_MEMBER_ID", ""),

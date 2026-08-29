@@ -33,16 +33,17 @@ function handleLineWebhook(events, options) {
         var userId = String(event.source && event.source.userId || "");
         var text = String(event.message.text || "");
         var ts = new Date(event.timestamp || new Date().getTime());
-        var member = handleMemberCheck({ userId: userId, displayName: "" });
-        var displayName = member && member.fullName ? member.fullName : "LINE User";
+        var memberName = getMemberNameByLineId(userId);
+        var lineName = getLineProfileName(userId);
 
-        chatRows.push([
-          Utilities.formatDate(ts, "JST", "yyyy/MM/dd HH:mm:ss"),
-          displayName,
-          text,
-          userId,
-          ""
-        ]);
+        chatRows.push({
+          created_at: Utilities.formatDate(ts, "JST", "yyyy/MM/dd HH:mm:ss"),
+          line_id: userId,
+          line_name: lineName,
+          name: memberName,
+          message: text,
+          memo: ""
+        });
 
         recordWebhookDiagnostic("info", "event.message.text", "Text message prepared for sheet", {
           request_id: requestId,
@@ -73,9 +74,29 @@ function handleLineWebhook(events, options) {
       var sheet = getOrCreateSheet(
         APP_CONFIG.spreadsheets.chat,
         APP_CONFIG.sheets.chatLog,
-        ["created_at", "line_name", "message", "line_id", "status"]
+        ["created_at", "line_id", "line_name", "name", "message", "memo"]
       );
-      sheet.getRange(sheet.getLastRow() + 1, 1, chatRows.length, chatRows[0].length).setValues(chatRows);
+      var expectedHeaders = ["created_at", "line_id", "line_name", "name", "message", "memo"];
+      var headerValues = sheet.getRange(1, 1, 1, expectedHeaders.length).getDisplayValues()[0];
+      var headerText = headerValues.join("|");
+      var expectedText = expectedHeaders.join("|");
+
+      if (headerText !== expectedText) {
+        sheet.getRange(1, 1, 1, expectedHeaders.length).setValues([expectedHeaders]);
+      }
+
+      var rowsForSheet = chatRows.map(function (row) {
+        return [
+          row.created_at,
+          row.line_id,
+          row.line_name,
+          row.name,
+          row.message,
+          row.memo
+        ];
+      });
+
+      sheet.getRange(sheet.getLastRow() + 1, 1, rowsForSheet.length, expectedHeaders.length).setValues(rowsForSheet);
 
       recordWebhookDiagnostic("info", "sheet.write.success", "Chat history saved", {
         request_id: requestId,
@@ -107,6 +128,45 @@ function handleLineWebhook(events, options) {
     failed: failed,
     rows_pending_write: chatRows.length
   };
+}
+
+function getMemberNameByLineId(userId) {
+  var uid = String(userId || "").trim();
+  if (!uid) return "Nodata";
+
+  try {
+    var member = handleMemberCheck({ userId: uid, displayName: "" });
+    var fullName = member && member.fullName ? String(member.fullName).trim() : "";
+    return fullName || "Nodata";
+  } catch (_) {
+    return "Nodata";
+  }
+}
+
+function getLineProfileName(userId) {
+  var uid = String(userId || "").trim();
+  if (!uid) return "";
+
+  var token = APP_CONFIG.line && APP_CONFIG.line.channelAccessToken
+    ? String(APP_CONFIG.line.channelAccessToken).trim()
+    : "";
+  if (!token) return "";
+
+  try {
+    var res = UrlFetchApp.fetch("https://api.line.me/v2/bot/profile/" + encodeURIComponent(uid), {
+      method: "get",
+      headers: {
+        Authorization: "Bearer " + token
+      },
+      muteHttpExceptions: true
+    });
+
+    if (res.getResponseCode() !== 200) return "";
+    var data = JSON.parse(res.getContentText() || "{}");
+    return String(data.displayName || "").trim();
+  } catch (_) {
+    return "";
+  }
 }
 
 function handlePostbackEvent(event, requestId, index) {
