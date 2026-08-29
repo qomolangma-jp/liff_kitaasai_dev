@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>北浅井公民館 予約＆空き状況システム</title>
+  <title>DX町内会公民館 予約＆空き状況システム</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="../common/app-shell.css">
@@ -179,7 +179,7 @@
       <div class="bg-gradient-to-r from-brand-600 to-brand-700 text-white px-5 py-3 shadow-sm flex items-center justify-between">
         <div class="flex items-center space-x-2">
           <i class="fa-solid fa-hotel text-sm text-brand-100"></i>
-          <h2 class="text-xs font-bold tracking-wider uppercase text-brand-100">北浅井公民館窓口フォーム</h2>
+          <h2 class="text-xs font-bold tracking-wider uppercase text-brand-100">DX町内会公民館窓口フォーム</h2>
         </div>
         <div id="devBadge" class="hidden bg-amber-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded animate-pulse">
           ローカルモード
@@ -643,7 +643,7 @@ async function initApp() {
         } else if (testStatus === "ng") {
           return { isRegistered: true, fullName: "制限された町民", status: "suspended" };
         } else {
-          return { isRegistered: true, fullName: "北浅井 太郎", status: "ok" };
+          return { isRegistered: true, fullName: "DX町内会 太郎", status: "ok" };
         }
       }
 
