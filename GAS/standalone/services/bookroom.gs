@@ -155,14 +155,8 @@ function sendBookroomApplicantReceipt(lineUserId, info) {
   }
 
   var slots = Array.isArray(info.slots) ? info.slots : [];
-  var slotText = slots.length === 3 ? "終日 (午前・午後・夜間)" : slots.join(", ");
+  var slotText = formatBookroomSlotText(slots);
   var requestText = String(info.request || "").trim() || "なし";
-  var text = "【北浅井公民館】予約申請を受け付けました。\n" +
-    "管理者の確認後に結果を通知します。\n\n" +
-    "■日付: " + String(info.date || "") + "\n" +
-    "■施設: " + String(info.room || "") + "\n" +
-    "■時間帯: " + slotText + "\n" +
-    "■要望: " + requestText;
 
   recordWebhookDiagnostic("info", "bookroom.receipt.start", "Sending applicant receipt", {
     to: uid,
@@ -171,7 +165,12 @@ function sendBookroomApplicantReceipt(lineUserId, info) {
     slot_count: slots.length
   });
 
-  sendLinePushMessage(uid, [{ type: "text", text: text }]);
+  sendLinePushMessage(uid, [buildApplicantReceiptFlexMessage({
+    date: String(info.date || ""),
+    room: String(info.room || ""),
+    slotText: slotText,
+    requestText: requestText
+  })]);
 }
 
 function notifyBookroomAdmins(batchId, info) {
@@ -189,41 +188,17 @@ function notifyBookroomAdmins(batchId, info) {
     return;
   }
 
-  var slotText = (Array.isArray(info.slots) && info.slots.length === 3)
-    ? "終日(午前/午後/夜間)"
-    : (Array.isArray(info.slots) ? info.slots.join(",") : "");
+  var slotText = formatBookroomSlotText(info.slots);
   var shortName = String(info.applicantName || "申請者");
-  var text = "申請者:" + shortName + "\n日付:" + String(info.date || "") + "\n施設:" + String(info.room || "") + "\n時間:" + slotText;
-  if (text.length > 160) {
-    text = text.substring(0, 157) + "...";
-  }
-
-  var templateMessage = {
-    type: "template",
-    altText: "公民館予約の承認依頼",
-    template: {
-      type: "buttons",
-      title: "公民館予約 承認依頼",
-      text: text,
-      actions: [
-        {
-          type: "postback",
-          label: "承認",
-          data: "action=approve&batchId=" + encodeURIComponent(String(batchId || ""))
-        },
-        {
-          type: "postback",
-          label: "却下",
-          data: "action=reject&batchId=" + encodeURIComponent(String(batchId || ""))
-        }
-      ]
-    }
-  };
-
-  var summaryText = {
-    type: "text",
-    text: "新しい予約申請です。下のボタンから承認/却下を選択してください。"
-  };
+  var requestText = String(info.request || "").trim() || "なし";
+  var flexMessage = buildAdminApprovalFlexMessage({
+    batchId: String(batchId || ""),
+    applicantName: shortName,
+    date: String(info.date || ""),
+    room: String(info.room || ""),
+    slotText: slotText,
+    requestText: requestText
+  });
 
   adminIds.forEach(function (adminId) {
     var uid = String(adminId || "").trim();
@@ -233,7 +208,7 @@ function notifyBookroomAdmins(batchId, info) {
       });
       return;
     }
-    sendLinePushMessage(uid, [summaryText, templateMessage]);
+    sendLinePushMessage(uid, [flexMessage]);
   });
 }
 
@@ -249,23 +224,203 @@ function notifyBookroomDecisionToApplicant(result, action) {
   var uid = String(result.applicantId || "").trim();
   if (!uid) return;
 
-  var slots = Array.isArray(result.slots) ? result.slots : [];
-  var slotText = slots.length === 3 ? "終日 (午前・午後・夜間)" : slots.join(", ");
+  var slotText = formatBookroomSlotText(result.slots);
   var approved = action === "approve";
+  sendLinePushMessage(uid, [buildApplicantDecisionFlexMessage({
+    approved: approved,
+    date: String(result.date || ""),
+    room: String(result.room || ""),
+    slotText: slotText
+  })]);
+}
 
-  var text = approved
-    ? "【北浅井公民館】予約申請が承認されました。\n\n"
-    : "【北浅井公民館】予約申請は却下となりました。\n\n";
+function formatBookroomSlotText(slots) {
+  var list = Array.isArray(slots) ? slots.filter(Boolean) : [];
+  if (list.length === 3) return "終日 (午前・午後・夜間)";
+  return list.join(" / ");
+}
 
-  text += "■日付: " + String(result.date || "") + "\n" +
-    "■施設: " + String(result.room || "") + "\n" +
-    "■時間帯: " + slotText;
+function trimToLength(text, maxLen) {
+  var value = String(text || "");
+  if (value.length <= maxLen) return value;
+  return value.substring(0, Math.max(0, maxLen - 1)) + "…";
+}
 
-  if (!approved) {
-    text += "\n\n別の日時で再申請をお願いします。";
-  }
+function buildAdminApprovalFlexMessage(info) {
+  var room = trimToLength(info.room, 24);
+  var slotText = trimToLength(info.slotText, 34);
+  var applicantName = trimToLength(info.applicantName, 24);
+  var requestText = trimToLength(info.requestText, 90);
+  var batchId = String(info.batchId || "");
 
-  sendLinePushMessage(uid, [{ type: "text", text: text }]);
+  return {
+    type: "flex",
+    altText: "公民館予約の承認依頼: " + info.date + " " + room + " " + slotText,
+    contents: {
+      type: "bubble",
+      size: "giga",
+      header: {
+        type: "box",
+        layout: "vertical",
+        paddingAll: "16px",
+        backgroundColor: "#0f766e",
+        contents: [
+          {
+            type: "text",
+            text: "公民館予約 承認リクエスト",
+            color: "#ffffff",
+            weight: "bold",
+            size: "md"
+          },
+          {
+            type: "text",
+            text: "新しい申請が届いています",
+            color: "#ccfbf1",
+            size: "xs",
+            margin: "sm"
+          }
+        ]
+      },
+      body: {
+        type: "box",
+        layout: "vertical",
+        spacing: "sm",
+        contents: [
+          {
+            type: "box",
+            layout: "vertical",
+            backgroundColor: "#f0fdfa",
+            cornerRadius: "12px",
+            paddingAll: "12px",
+            spacing: "sm",
+            contents: [
+              { type: "text", text: "申請者: " + applicantName, size: "sm", color: "#134e4a", weight: "bold", wrap: true },
+              { type: "text", text: "日付: " + info.date, size: "sm", color: "#0f172a" },
+              { type: "text", text: "施設: " + room, size: "sm", color: "#0f172a", wrap: true },
+              { type: "text", text: "時間帯: " + slotText, size: "sm", color: "#0f172a", wrap: true }
+            ]
+          },
+          {
+            type: "box",
+            layout: "vertical",
+            margin: "md",
+            spacing: "xs",
+            contents: [
+              { type: "text", text: "要望", size: "xs", color: "#64748b", weight: "bold" },
+              { type: "text", text: requestText, size: "sm", color: "#334155", wrap: true }
+            ]
+          }
+        ]
+      },
+      footer: {
+        type: "box",
+        layout: "vertical",
+        spacing: "sm",
+        contents: [
+          {
+            type: "button",
+            style: "primary",
+            color: "#059669",
+            action: {
+              type: "postback",
+              label: "承認する",
+              data: "action=approve&batchId=" + encodeURIComponent(batchId)
+            }
+          },
+          {
+            type: "button",
+            style: "secondary",
+            action: {
+              type: "postback",
+              label: "却下する",
+              data: "action=reject&batchId=" + encodeURIComponent(batchId)
+            }
+          }
+        ]
+      }
+    }
+  };
+}
+
+function buildApplicantReceiptFlexMessage(info) {
+  var room = trimToLength(info.room, 24);
+  var slotText = trimToLength(info.slotText, 34);
+  var requestText = trimToLength(info.requestText, 90);
+
+  return {
+    type: "flex",
+    altText: "予約申請を受け付けました: " + info.date + " " + room,
+    contents: {
+      type: "bubble",
+      header: {
+        type: "box",
+        layout: "vertical",
+        backgroundColor: "#166534",
+        paddingAll: "16px",
+        contents: [
+          { type: "text", text: "予約申請 受付完了", color: "#ffffff", weight: "bold", size: "lg" },
+          { type: "text", text: "管理者の確認待ちです", color: "#dcfce7", size: "xs", margin: "sm" }
+        ]
+      },
+      body: {
+        type: "box",
+        layout: "vertical",
+        spacing: "sm",
+        contents: [
+          { type: "text", text: "日付: " + info.date, size: "sm", color: "#1e293b" },
+          { type: "text", text: "施設: " + room, size: "sm", color: "#1e293b", wrap: true },
+          { type: "text", text: "時間帯: " + slotText, size: "sm", color: "#1e293b", wrap: true },
+          {
+            type: "box",
+            layout: "vertical",
+            margin: "md",
+            backgroundColor: "#f8fafc",
+            cornerRadius: "8px",
+            paddingAll: "10px",
+            contents: [
+              { type: "text", text: "要望", size: "xs", color: "#64748b", weight: "bold" },
+              { type: "text", text: requestText, size: "sm", color: "#334155", wrap: true }
+            ]
+          },
+          { type: "text", text: "審査結果はこのトークで自動通知されます。", size: "xs", color: "#475569", margin: "md", wrap: true }
+        ]
+      }
+    }
+  };
+}
+
+function buildApplicantDecisionFlexMessage(info) {
+  var accent = info.approved ? "#047857" : "#b91c1c";
+  var title = info.approved ? "予約が承認されました" : "予約は却下されました";
+  var sub = info.approved ? "ご利用ありがとうございます" : "別日程での再申請をお願いします";
+
+  return {
+    type: "flex",
+    altText: "予約審査結果: " + title,
+    contents: {
+      type: "bubble",
+      header: {
+        type: "box",
+        layout: "vertical",
+        backgroundColor: accent,
+        paddingAll: "16px",
+        contents: [
+          { type: "text", text: title, color: "#ffffff", weight: "bold", size: "lg", wrap: true },
+          { type: "text", text: sub, color: "#fee2e2", size: "xs", margin: "sm", wrap: true }
+        ]
+      },
+      body: {
+        type: "box",
+        layout: "vertical",
+        spacing: "sm",
+        contents: [
+          { type: "text", text: "日付: " + String(info.date || ""), size: "sm", color: "#1e293b" },
+          { type: "text", text: "施設: " + String(info.room || ""), size: "sm", color: "#1e293b", wrap: true },
+          { type: "text", text: "時間帯: " + String(info.slotText || ""), size: "sm", color: "#1e293b", wrap: true }
+        ]
+      }
+    }
+  };
 }
 
 function sendLinePushMessage(toUserId, messages) {

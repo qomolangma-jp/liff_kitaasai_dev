@@ -1,1 +1,5 @@
 ZZ-liff_kitaasai_dev.code-workspace
+# その他不要ファイル
+*.log
+.DS_Store
+/x/
