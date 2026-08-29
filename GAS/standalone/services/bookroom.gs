@@ -147,7 +147,12 @@ function processBookroomApprovalByBatch(batchId, action) {
 
 function sendBookroomApplicantReceipt(lineUserId, info) {
   var uid = String(lineUserId || "").trim();
-  if (!uid) return;
+  if (!uid) {
+    recordWebhookDiagnostic("warn", "bookroom.receipt.skip", "Applicant receipt skipped: uid missing", {
+      line_user_id: String(lineUserId || "")
+    });
+    return;
+  }
 
   var slots = Array.isArray(info.slots) ? info.slots : [];
   var slotText = slots.length === 3 ? "終日 (午前・午後・夜間)" : slots.join(", ");
@@ -158,6 +163,13 @@ function sendBookroomApplicantReceipt(lineUserId, info) {
     "■施設: " + String(info.room || "") + "\n" +
     "■時間帯: " + slotText + "\n" +
     "■要望: " + requestText;
+
+  recordWebhookDiagnostic("info", "bookroom.receipt.start", "Sending applicant receipt", {
+    to: uid,
+    date: String(info.date || ""),
+    room: String(info.room || ""),
+    slot_count: slots.length
+  });
 
   sendLinePushMessage(uid, [{ type: "text", text: text }]);
 }

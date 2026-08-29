@@ -94,11 +94,29 @@ function routeGet(action, e) {
 
 function routePost(action, e, payload) {
   switch (action) {
-    case "bookroom_submit":
+    case "bookroom_submit": {
+      recordWebhookDiagnostic("info", "bookroom.route.enter", "Bookroom submit route entered", {
+        has_line_id: !!(payload && payload.line_id),
+        has_date: !!(payload && payload.date),
+        has_room: !!(payload && payload.room),
+        has_token: !!(payload && payload.liff_token)
+      });
+
       if (!verifyLiffToken(payload.liff_token)) {
+        recordWebhookDiagnostic("warn", "bookroom.route.reject", "Bookroom submit rejected: invalid LIFF token", {
+          has_token: !!(payload && payload.liff_token)
+        });
         return errorResponse(action, "Invalid LIFF token", "");
       }
-      return jsonResponse(handleBookroomSubmit(payload));
+
+      var submitResult = handleBookroomSubmit(payload);
+      recordWebhookDiagnostic("info", "bookroom.route.result", "Bookroom submit handled", {
+        status: submitResult && submitResult.status ? String(submitResult.status) : "",
+        message: submitResult && submitResult.message ? String(submitResult.message) : "",
+        batch_id: submitResult && submitResult.batch_id ? String(submitResult.batch_id) : ""
+      });
+      return jsonResponse(submitResult);
+    }
 
     case "line_webhook": {
       var bodyString = e && e.postData && e.postData.contents ? e.postData.contents : "{}";
