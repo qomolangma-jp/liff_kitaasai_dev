@@ -125,9 +125,10 @@
   </main>
 
   <script>
-    const LIFF_ID = 'YOUR_LIFF_ID';
-    const REGISTER_FORM_URL = 'https://example.com/register';
-    const GAS_URL = 'https://script.google.com/macros/s/YOUR_DEPLOY_ID/exec';
+    const PAGE_CONFIG = (window.AppConfig && window.AppConfig.getPageConfig('notice')) || {};
+    const LIFF_ID = PAGE_CONFIG.liffId || 'YOUR_LIFF_ID';
+    const REGISTER_FORM_URL = PAGE_CONFIG.registerFormUrl || 'https://example.com/register';
+    const GAS_URL = PAGE_CONFIG.gasUrl || '';
     const state = {
       profile: null,
       member: null,
