@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <title>LINEメッセージ一斉送信</title>
+    <style>
+      body { font-family: sans-serif; padding: 15px; color: #333; }
+      textarea { width: 100%; height: 120px; padding: 10px; box-sizing: border-box; resize: none; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; }
+      .btn-container { display: flex; justify-content: space-between; margin-top: 15px; }
+      button { padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 48%; }
+      #checkBtn { background-color: #007BFF; color: white; width: 100%; }
+      #sendBtn { background-color: #06C755; color: white; display: none; }
+      #cancelBtn { background-color: #ccc; color: black; display: none; }
+      button:disabled { background-color: #999 !important; cursor: not-allowed; }
+      #statusArea { background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 15px; display: none; max-height: 120px; overflow-y: auto; font-size: 0.9em; border: 1px solid #ddd; }
+      .alert { color: #d9534f; font-weight: bold; }
+      .info { color: #007BFF; font-weight: bold; }
+    </style>
+  </head>
+  <body>
+    <div id="step1">
+      <p style="font-size: 0.9em;">※スプレッドシート上で<strong>見えている人全員</strong>に送信されます。</p>
+      <textarea id="messageBox" placeholder="ここにメッセージを入力してください..."></textarea>
+      <button id="checkBtn" onclick="checkTargets()">送信対象を確認する</button>
+    </div>
+
+    <div id="statusArea"></div>
+
+    <div class="btn-container">
+      <button id="cancelBtn" onclick="resetForm()">戻る</button>
+      <button id="sendBtn" onclick="send()">確定して送信する</button>
+    </div>
+
+    <script>
+      let currentTargetIds = [];
+      let currentTargetNames = [];
+
+      function checkTargets() {
+        const msg = document.getElementById('messageBox').value;
+        if (!msg.trim()) {
+          alert('メッセージを入力してください。');
+          return;
+        }
+
+        const checkBtn = document.getElementById('checkBtn');
+        const statusArea = document.getElementById('statusArea');
+
+        checkBtn.disabled = true;
+        checkBtn.innerText = '対象者を確認中...';
+        statusArea.style.display = 'block';
+        statusArea.innerHTML = '読み込み中...';
+
+        google.script.run
+          .withSuccessHandler(function (targets) {
+            checkBtn.style.display = 'none';
+            document.getElementById('messageBox').disabled = true;
+            document.getElementById('sendBtn').style.display = 'block';
+            document.getElementById('cancelBtn').style.display = 'block';
+
+            currentTargetIds = targets.ids || [];
+            currentTargetNames = targets.names || [];
+
+            if ((targets.count || 0) === 0) {
+              statusArea.innerHTML = "<span class='alert'>対象者が0人です。フィルタ設定を確認してください。</span>";
+              document.getElementById('sendBtn').disabled = true;
+            } else {
+              document.getElementById('sendBtn').disabled = false;
+              const nameList = currentTargetNames.slice(0, 20).join(', ');
+              const more = currentTargetNames.length > 20 ? `...他${currentTargetNames.length - 20}名` : '';
+              statusArea.innerHTML = `<span class='info'>送信対象: ${targets.count} 名</span><br><br><span style='color:#666;'>${nameList}${more}</span>`;
+            }
+          })
+          .withFailureHandler(function (error) {
+            statusArea.innerHTML = "<span class='alert'>エラー: " + error.message + "</span>";
+            checkBtn.disabled = false;
+            checkBtn.innerText = '送信対象を確認する';
+          })
+          .getTargetUsers();
+      }
+
+      function resetForm() {
+        document.getElementById('checkBtn').style.display = 'block';
+        document.getElementById('checkBtn').disabled = false;
+        document.getElementById('checkBtn').innerText = '送信対象を確認する';
+        document.getElementById('messageBox').disabled = false;
+        document.getElementById('sendBtn').style.display = 'none';
+        document.getElementById('cancelBtn').style.display = 'none';
+        document.getElementById('statusArea').style.display = 'none';
+        currentTargetIds = [];
+        currentTargetNames = [];
+      }
+
+      function send() {
+        const msg = document.getElementById('messageBox').value;
+        const sendBtn = document.getElementById('sendBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const statusArea = document.getElementById('statusArea');
+
+        if (!confirm('本当に送信を開始しますか？')) return;
+
+        sendBtn.disabled = true;
+        cancelBtn.disabled = true;
+        sendBtn.innerText = '送信中...';
+
+        google.script.run
+          .withSuccessHandler(function (result) {
+            statusArea.innerHTML = `<span style='color:green; font-weight:bold;'>${result}</span>`;
+            setTimeout(() => { google.script.host.close(); }, 2000);
+          })
+          .withFailureHandler(function (error) {
+            statusArea.innerHTML = "<span class='alert'>送信エラー: " + error.message + "</span>";
+            sendBtn.disabled = false;
+            cancelBtn.disabled = false;
+            sendBtn.innerText = '確定して送信する';
+          })
+          .executeLineMessage(currentTargetIds, msg, currentTargetNames);
+      }
+    </script>
+  </body>
+</html>

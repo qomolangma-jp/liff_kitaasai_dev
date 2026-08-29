@@ -19,6 +19,7 @@ This folder contains a standalone Google Apps Script design that treats multiple
 - services/member.gs: member check and profile upsert
 - services/bookroom.gs: reservation list and submit
 - services/chat.gs: LINE webhook and postback processing
+- services/line-push.gs: LINE multicast push sender for library calls
 - services/notice.gs: monthly items and access logs
 - services/attendance.gs: question and answer APIs
 - jobs/chat_sync.gs: scheduled matching job
@@ -36,6 +37,7 @@ Set these before deployment:
 - SHEET_BOOKROOM_MAIN (default: 予約台帳)
 - SHEET_CHAT_LOG (default: chat)
 - SHEET_WEBHOOK_LOG (default: webhook_log)
+- SHEET_PUSH_LOG (default: push_log)
 - SHEET_NOTICE_ITEMS (default: monthly_items)
 - SHEET_AUDIT_LOG (default: access_log)
 - SHEET_ATTENDANCE_QUESTIONS (default: questions)
@@ -46,6 +48,18 @@ Set these before deployment:
 - LINE_SIGNATURE_VERIFY_REQUIRED (default: false)
 - LIFF_TOKEN_VERIFY_ENABLED (true/false)
 - REGISTER_FORM_URL
+
+Optional properties for multicast push:
+
+- PUSH_MESSAGE_TEXT (required only for sendMulticastToFilteredMembers)
+- PUSH_DRY_RUN (default: true)
+- PUSH_REQUIRE_DIGITAL (default: true)
+- PUSH_INCLUDE_ROLES (comma-separated, optional)
+- PUSH_EXCLUDE_STATUSES (default: ng,suspended,blocked,inactive)
+- PUSH_NOTIFICATION_DISABLED (default: false)
+- DIALOG_TARGET_SHEET (default: 名簿)
+- HISTORY_SS_ID (optional, fallback: SS_MEMBER_ID)
+- HISTORY_SHEET_NAME (default: line_send_history)
 
 Webhook notes:
 
@@ -90,6 +104,28 @@ POST:
    - Execute as: User deploying the app
    - Who has access: Anyone
 5. Replace each LIFF page GAS URL with the new single endpoint.
+
+## Library call (container-bound script)
+
+You can call push from a bound script via library reference:
+
+function onOpen() {
+   SpreadsheetApp.getUi()
+      .createMenu('LINE送信機能')
+      .addItem('一括送信を実行', 'runPush')
+      .addToUi();
+}
+
+function runPush() {
+   var result = MainScript.sendMulticastToFilteredMembers();
+   Logger.log(JSON.stringify(result));
+}
+
+Dialog flow (message input from UI) can call:
+
+- MainScript.getTargetUsers()
+- MainScript.executeLineMessage(targetIds, message, targetNames)
+- MainScript.sendLineFromDialog(message)
 
 ## Trigger job
 
