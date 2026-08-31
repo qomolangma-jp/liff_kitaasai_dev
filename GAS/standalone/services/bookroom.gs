@@ -314,11 +314,12 @@ function buildAdminApprovalFlexMessage(info) {
       },
       footer: {
         type: "box",
-        layout: "vertical",
-        spacing: "sm",
+        layout: "horizontal",
+        spacing: "md",
         contents: [
           {
             type: "button",
+            flex: 1,
             style: "primary",
             color: "#059669",
             action: {
@@ -329,6 +330,7 @@ function buildAdminApprovalFlexMessage(info) {
           },
           {
             type: "button",
+            flex: 1,
             style: "secondary",
             action: {
               type: "postback",
