@@ -11,9 +11,9 @@
       gasUrl: SHARED_GAS_URL
     },
     notice: {
-      liffId: "2008962357-JxnIosW0",
+      liffId: "2008893549-d75d72lX",
       gasUrl: SHARED_GAS_URL,
-      registerFormUrl: "https://example.com/register"
+      registerFormUrl: "https://liff.line.me/2008893549-jeCNKx4Y"
     },
     attendance: {
       liffId: "2008893549-jeCNKx4Y",
