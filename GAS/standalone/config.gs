@@ -43,7 +43,8 @@ var APP_CONFIG = (function buildConfig() {
       webhookLog: get("SHEET_WEBHOOK_LOG", "webhook_log"),
       pushLog: get("SHEET_PUSH_LOG", "push_log"),
       noticeItems: get("SHEET_NOTICE_ITEMS", "monthly_items"),
-      auditLog: get("SHEET_AUDIT_LOG", "access_log"),
+      auditLog: get("SHEET_AUDIT_LOG", "access_log_raw"),
+      summaryMonthly: get("SHEET_SUMMARY_MONTHLY", "summary_monthly"),
       attendanceQuestions: get("SHEET_ATTENDANCE_QUESTIONS", "questions"),
       attendanceAnswers: get("SHEET_ATTENDANCE_ANSWERS", "answers")
     },

@@ -479,7 +479,9 @@
 				return;
 			}
 
-			logAction({ action_type: 'item_click', item_label: label });
+			const targetMonth = getCurrentYm();
+			logAction({ action_type: 'item_click', item_label: label, url, target_month: targetMonth });
+			logAction({ action_type: 'item_redirect', item_label: label, url, target_month: targetMonth });
 
 			if (window.liff && liff.isInClient()) {
 				liff.openWindow({ url, external: true });
@@ -572,17 +574,22 @@
 
 		function logAction(payload) {
 			if (state.isLocalMode) {
-				console.log('[LOCAL LOG]', payload.action_type, payload.item_label || '', payload.ym || getCurrentYm());
+				console.log('[LOCAL LOG]', payload.action_type, payload.item_label || '', payload.target_month || payload.ym || getCurrentYm());
 				return;
 			}
 
+			const targetMonth = payload.target_month || payload.ym || getCurrentYm();
 			const body = {
 				action: 'log',
 				action_type: payload.action_type,
 				item_label: payload.item_label || '',
-				ym: payload.ym || getCurrentYm(),
+				target_month: targetMonth,
+				ym: targetMonth,
+				url: payload.url || '',
 				user_id: state.profile?.userId || '',
-				user_name: state.member?.memberName || state.profile?.displayName || ''
+				user_name: state.member?.memberName || state.profile?.displayName || '',
+				group: state.member?.group || '',
+				meta: payload.meta || {}
 			};
 
 			if (navigator.sendBeacon) {

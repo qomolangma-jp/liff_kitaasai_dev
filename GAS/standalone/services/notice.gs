@@ -43,21 +43,37 @@ function normalizeDateForNotice(input) {
 }
 
 function handleClientLog(payload) {
+  var data = payload || {};
   var sheet = getOrCreateSheet(
     APP_CONFIG.spreadsheets.notice,
     APP_CONFIG.sheets.auditLog,
-    ["created_at", "action", "action_type", "item_label", "ym", "user_id", "user_name", "meta"]
+    [
+      "timestamp",
+      "action",
+      "action_type",
+      "item_label",
+      "target_month",
+      "ym",
+      "url",
+      "user_id",
+      "user_name",
+      "group",
+      "meta"
+    ]
   );
 
   sheet.appendRow([
     new Date(),
     "log",
-    payload.action_type || "",
-    payload.item_label || "",
-    payload.ym || "",
-    payload.user_id || "",
-    payload.user_name || "",
-    JSON.stringify(payload || {})
+    data.action_type || "",
+    data.item_label || "",
+    data.target_month || data.ym || "",
+    data.ym || data.target_month || "",
+    data.url || "",
+    data.user_id || "",
+    data.user_name || "",
+    data.group || "",
+    JSON.stringify(data.meta || data || {})
   ]);
 
   return { status: "success" };
