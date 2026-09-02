@@ -44,12 +44,14 @@ var APP_CONFIG = (function buildConfig() {
       pushLog: get("SHEET_PUSH_LOG", "push_log"),
       noticeItems: get("SHEET_NOTICE_ITEMS", "monthly_items"),
       auditLog: get("SHEET_AUDIT_LOG", "access_log_raw"),
+      apiAuditLog: get("SHEET_API_AUDIT_LOG", "access_api_log"),
+      memberLastSeen: get("SHEET_MEMBER_LAST_SEEN", "member_last_seen"),
       summaryMonthly: get("SHEET_SUMMARY_MONTHLY", "summary_monthly"),
       attendanceQuestions: get("SHEET_ATTENDANCE_QUESTIONS", "questions"),
       attendanceAnswers: get("SHEET_ATTENDANCE_ANSWERS", "answers")
     },
     registration: {
-      formUrl: get("REGISTER_FORM_URL", "https://example.com/register")
+      formUrl: get("REGISTER_FORM_URL", "https://liff.line.me/2008893549-jeCNKx4Y")
     },
     push: {
       historySpreadsheetId: get("HISTORY_SS_ID", ""),

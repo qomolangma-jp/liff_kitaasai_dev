@@ -444,6 +444,7 @@
 				isRegistered: normalized.isRegistered !== undefined ? normalized.isRegistered : status !== 'not_registered',
 				status,
 				memberName: normalized.fullName || (data && (data.member_name || data.display_name)) || profile.displayName || '町民',
+				group: normalized.group || (data && (data.group || data.group_name)) || '',
 				registerFormUrl: normalized.registerFormUrl || (data && data.register_form_url) || REGISTER_FORM_URL
 			};
 		}

@@ -23,6 +23,7 @@ function handleMemberCheck(input) {
   var lnCol = headers["name_2nd"];
   var fnCol = headers["name_1st"];
   var statusCol = headers["status"];
+  var groupCol = headers["group"];
 
   if (idCol === undefined) {
     return {
@@ -52,10 +53,12 @@ function handleMemberCheck(input) {
 
   var fullName = ((lnCol !== undefined ? row[lnCol] : "") + " " + (fnCol !== undefined ? row[fnCol] : "")).trim();
   var status = (statusCol !== undefined ? String(row[statusCol] || "") : "OK").trim().toLowerCase();
+  var groupValue = groupCol !== undefined ? String(row[groupCol] || "").trim() : "";
 
   return {
     isRegistered: true,
     fullName: fullName || (input.displayName || "町民"),
+    group: groupValue,
     status: status === "ng" ? "suspended" : "ok",
     registerFormUrl: APP_CONFIG.registration.formUrl
   };
