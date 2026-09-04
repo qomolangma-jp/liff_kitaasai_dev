@@ -18,6 +18,10 @@
     attendance: {
       liffId: "2008893549-jeCNKx4Y",
       gasUrl: SHARED_GAS_URL
+    },
+    safetycheck: {
+      liffId: "2008893549-jeCNKx4Y",
+      gasUrl: SHARED_GAS_URL
     }
   };
 

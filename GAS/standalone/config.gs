@@ -48,7 +48,10 @@ var APP_CONFIG = (function buildConfig() {
       memberLastSeen: get("SHEET_MEMBER_LAST_SEEN", "member_last_seen"),
       summaryMonthly: get("SHEET_SUMMARY_MONTHLY", "summary_monthly"),
       attendanceQuestions: get("SHEET_ATTENDANCE_QUESTIONS", "questions"),
-      attendanceAnswers: get("SHEET_ATTENDANCE_ANSWERS", "answers")
+      attendanceAnswers: get("SHEET_ATTENDANCE_ANSWERS", "answers"),
+      safetyCheckSettings: get("SHEET_SAFETY_CHECK_SETTINGS", "survey_settings"),
+      safetyCheckResponses: get("SHEET_SAFETY_CHECK_RESPONSES", "survey_responses"),
+      safetyCheckAccessLog: get("SHEET_SAFETY_CHECK_ACCESS_LOG", "survey_access_log")
     },
     registration: {
       formUrl: get("REGISTER_FORM_URL", "https://liff.line.me/2008893549-jeCNKx4Y")

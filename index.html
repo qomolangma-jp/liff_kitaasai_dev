@@ -487,6 +487,38 @@
       }
     }
 
+    function showSafetyCheckReminder() {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('from_safety_check') !== '1') {
+        return;
+      }
+
+      const kana1 = document.querySelector('input[name="kana_1st"]');
+      const kana2 = document.querySelector('input[name="kana_2nd"]');
+      const hasKatakana = !!(kana1 && kana2 && (kana1.value.trim() || kana2.value.trim()));
+
+      if (hasKatakana) {
+        return;
+      }
+
+      const banner = document.createElement('div');
+      banner.style.margin = '16px 15px 0';
+      banner.style.background = '#fff7ed';
+      banner.style.border = '1px solid #fdba74';
+      banner.style.color = '#9a4d00';
+      banner.style.borderRadius = '14px';
+      banner.style.padding = '12px 14px';
+      banner.style.fontSize = '0.9rem';
+      banner.style.fontWeight = '700';
+      banner.style.lineHeight = '1.6';
+      banner.textContent = '安否確認は受け付けました。引き続き、ユーザー登録を行ってください。';
+
+      const content = document.querySelector('.content');
+      if (content) {
+        content.insertBefore(banner, content.firstChild);
+      }
+    }
+
     function showModal({ title = 'お知らせ', message = '', type = 'info', onClose = null }) {
       const modal = document.getElementById('result-modal');
       const titleEl = document.getElementById('modal-title');
@@ -537,6 +569,8 @@
       document.querySelectorAll('.radio-group input, .checkbox-group input').forEach(input => {
         input.addEventListener('change', syncSelectableLabels);
       });
+
+      showSafetyCheckReminder();
 
       try {
         await liff.init({ liffId: LIFF_ID });

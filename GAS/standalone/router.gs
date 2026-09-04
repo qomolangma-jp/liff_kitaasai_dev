@@ -44,6 +44,7 @@ function resolveAction(method, e, payload) {
     if (p.type === "user") return "member_check";
     if (p.line_id) return "member_profile_get";
     if (p.qid) return "attendance_question";
+    if (p.sid) return "safety_check";
     return "bookroom_list";
   }
 
@@ -53,6 +54,8 @@ function resolveAction(method, e, payload) {
     if (body.lineId && body.qid) return "attendance_answer";
     if (body.date && body.room) return "bookroom_submit";
     if (body.line_id && (body.name_1st || body.address || body.is_digital)) return "member_profile_upsert";
+    if (body.action === 'safety_check_register') return 'safety_check_register';
+    if (body.action === 'safety_check_submit') return 'safety_check_submit';
     if (body.action_type) return "log";
   }
 
@@ -90,6 +93,12 @@ function routeGet(action, e) {
     case "member_profile_get":
       return jsonResponse(handleMemberProfileGet({ lineId: p.line_id || "" }));
 
+    case "safety_check":
+      return jsonResponse(handleSafetyCheckOpen({
+        surveyId: p.sid || "",
+        lineId: p.line_id || p.lineId || ""
+      }));
+
     default:
       return errorResponse(action, "Unknown GET action", action);
   }
@@ -99,6 +108,12 @@ function routePost(action, e, payload) {
   switch (action) {
     case "diagnostics_write":
       return jsonResponse(handleDiagnosticsWrite(payload));
+
+    case "safety_check_register":
+      return jsonResponse(handleSafetyCheckRegister(payload));
+
+    case "safety_check_submit":
+      return jsonResponse(handleSafetyCheckSubmit(payload));
 
     case "bookroom_submit": {
       recordWebhookDiagnostic("info", "bookroom.route.enter", "Bookroom submit route entered", {

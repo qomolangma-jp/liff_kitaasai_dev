@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>安否確認</title>
+  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    :root {
+      --primary: #16a34a;
+      --bg: #f3f4f6;
+      --card: #ffffff;
+      --text: #111827;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --danger: #dc2626;
+      --warning: #fff7ed;
+      --warning-text: #9a4d00;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Hiragino Sans", "Yu Gothic", sans-serif;
+    }
+    .container {
+      max-width: 520px;
+      margin: 0 auto;
+      min-height: 100vh;
+      padding: 24px 16px 36px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: 0 10px 24px rgba(17, 24, 39, 0.05);
+      padding: 22px 18px;
+    }
+    .eyebrow {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      background: #dcfce7;
+      color: #166534;
+      border-radius: 999px;
+      padding: 6px 12px;
+      margin-bottom: 12px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 24px;
+      line-height: 1.4;
+    }
+    .subtitle {
+      margin: 0 0 20px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .form-group {
+      margin-top: 18px;
+    }
+    label {
+      display: block;
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    input, select {
+      width: 100%;
+      appearance: none;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #f9fafb;
+      padding: 14px 12px;
+      font-size: 16px;
+      color: var(--text);
+    }
+    input:focus, select:focus {
+      outline: 2px solid rgba(22, 163, 74, 0.2);
+      border-color: var(--primary);
+      background: #fff;
+    }
+    .btn {
+      width: 100%;
+      margin-top: 22px;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--primary), #15803d);
+      color: white;
+      font-size: 16px;
+      font-weight: 800;
+      padding: 16px 12px;
+      cursor: pointer;
+      box-shadow: 0 12px 22px rgba(22, 163, 74, 0.18);
+    }
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
+    .status {
+      margin-top: 14px;
+      min-height: 22px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .alert {
+      margin-top: 16px;
+      background: var(--warning);
+      color: var(--warning-text);
+      border: 1px solid #fdba74;
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 14px;
+      line-height: 1.6;
+      display: none;
+    }
+    .alert.show {
+      display: block;
+    }
+    .inline-row {
+      display: flex;
+      gap: 12px;
+    }
+    .inline-row > div {
+      flex: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="eyebrow">安否確認</div>
+      <h1 id="survey-title">安否確認</h1>
+      <p class="subtitle">現在の安否状態をお知らせください。</p>
+
+      <div id="register-panel" style="display:none;">
+        <div class="form-group">
+          <label for="register_name">氏名</label>
+          <input id="register_name" type="text" placeholder="例: 山田 太郎" />
+        </div>
+        <div class="form-group">
+          <label for="register_group">班</label>
+          <select id="register_group">
+            <option value="">選択してください</option>
+            <option value="1">1班</option>
+            <option value="2">2班</option>
+            <option value="3">3班</option>
+            <option value="4">4班</option>
+            <option value="5">5班</option>
+            <option value="6">6班</option>
+            <option value="7">7班</option>
+            <option value="8">8班</option>
+            <option value="9">9班</option>
+            <option value="10">10班</option>
+            <option value="11">11班</option>
+            <option value="12">12班</option>
+            <option value="13">13班</option>
+            <option value="14">14班</option>
+            <option value="15">15班</option>
+          </select>
+        </div>
+        <button id="register-btn" class="btn" type="button">登録して続ける</button>
+      </div>
+
+      <div id="survey-panel" style="display:none;">
+        <div class="form-group">
+          <label>現在の状況</label>
+          <div class="inline-row">
+            <div>
+              <label><input type="radio" name="answer" value="safe" /> 無事</label>
+            </div>
+            <div>
+              <label><input type="radio" name="answer" value="needs_help" /> 連絡が必要</label>
+            </div>
+          </div>
+          <div class="inline-row" style="margin-top: 10px;">
+            <div>
+              <label><input type="radio" name="answer" value="unknown" /> 不明</label>
+            </div>
+            <div>
+              <label><input type="radio" name="answer" value="not_answered" /> 未回答</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="remarks">補足</label>
+          <input id="remarks" type="text" placeholder="例: 連絡先や状況の補足" />
+        </div>
+
+        <button id="submit-btn" class="btn" type="button">安否を送信</button>
+      </div>
+
+      <div id="completed-panel" style="display:none;">
+        <div class="alert show" style="display:block;">
+          安否確認は受け付けました。ご協力ありがとうございました。
+        </div>
+      </div>
+
+      <div id="status" class="status"></div>
+    </div>
+  </div>
+
+  <script src="../common/app-config.js"></script>
+  <script>
+    const PAGE_CONFIG = (window.AppConfig && window.AppConfig.getPageConfig('safetycheck')) || {};
+    const GAS_API_URL = PAGE_CONFIG.gasUrl || "";
+    const LIFF_ID = PAGE_CONFIG.liffId || "2008893549-jeCNKx4Y";
+    const params = new URLSearchParams(window.location.search);
+    const surveyId = params.get('sid') || '';
+    const lineIdParam = params.get('line_id') || '';
+
+    const registerPanel = document.getElementById('register-panel');
+    const surveyPanel = document.getElementById('survey-panel');
+    const completedPanel = document.getElementById('completed-panel');
+    const statusEl = document.getElementById('status');
+    const surveyTitle = document.getElementById('survey-title');
+
+    const state = {
+      lineId: '',
+      registered: false,
+      surveyTitle: '安否確認'
+    };
+
+    function setStatus(text, isError) {
+      statusEl.textContent = text || '';
+      statusEl.style.color = isError ? '#dc2626' : '#6b7280';
+    }
+
+    function showPanel(name) {
+      registerPanel.style.display = name === 'register' ? 'block' : 'none';
+      surveyPanel.style.display = name === 'survey' ? 'block' : 'none';
+      completedPanel.style.display = name === 'completed' ? 'block' : 'none';
+    }
+
+    async function init() {
+      if (!GAS_API_URL) {
+        setStatus('GAS URL が未設定です。', true);
+        return;
+      }
+
+      try {
+        await liff.init({ liffId: LIFF_ID });
+        if (!liff.isLoggedIn()) {
+          liff.login();
+          return;
+        }
+
+        const profile = await liff.getProfile();
+        state.lineId = profile.userId;
+
+        const res = await fetch(`${GAS_API_URL}?action=safety_check&sid=${encodeURIComponent(surveyId)}&line_id=${encodeURIComponent(profile.userId)}`);
+        const data = await res.json();
+
+        if (!data || data.status === 'error') {
+          setStatus(data && data.message ? data.message : '安否確認の開始に失敗しました。', true);
+          return;
+        }
+
+        surveyTitle.textContent = data.title || '安否確認';
+        state.surveyTitle = data.title || '安否確認';
+
+        if (data.is_registered) {
+          state.registered = true;
+          showPanel('survey');
+          setStatus('登録済みユーザーです。安否をお知らせください。');
+        } else {
+          state.registered = false;
+          showPanel('register');
+          setStatus('まだ登録が未完了です。簡易登録を行ってください。');
+        }
+      } catch (err) {
+        console.error(err);
+        setStatus('初期化に失敗しました。' + err.message, true);
+      }
+    }
+
+    document.getElementById('register-btn').addEventListener('click', async function () {
+      const name = document.getElementById('register_name').value.trim();
+      const group = document.getElementById('register_group').value;
+
+      if (!name || !group) {
+        setStatus('氏名と班を入力してください。', true);
+        return;
+      }
+
+      setStatus('登録中...');
+      try {
+        const response = await fetch(GAS_API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'safety_check_register',
+            survey_id: surveyId,
+            line_id: state.lineId,
+            name: name,
+            group: group
+          })
+        });
+
+        const result = await response.json();
+        if (!result || result.status !== 'success') {
+          setStatus((result && result.message) || '登録に失敗しました。', true);
+          return;
+        }
+
+        const redirectUrl = '/index.html?from_safety_check=1';
+        window.location.href = redirectUrl;
+      } catch (err) {
+        setStatus('登録に失敗しました。' + err.message, true);
+      }
+    });
+
+    document.getElementById('submit-btn').addEventListener('click', async function () {
+      const selected = document.querySelector('input[name="answer"]:checked');
+      if (!selected) {
+        setStatus('現在の状況を選択してください。', true);
+        return;
+      }
+
+      setStatus('送信中...');
+      try {
+        const response = await fetch(GAS_API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'safety_check_submit',
+            survey_id: surveyId,
+            line_id: state.lineId,
+            answer_status: selected.value,
+            remarks: document.getElementById('remarks').value.trim(),
+            user_name: state.user_name || '',
+            group_name: state.group_name || '',
+            accessed_at: new Date().toISOString()
+          })
+        });
+
+        const result = await response.json();
+        if (!result || result.status !== 'success') {
+          setStatus((result && result.message) || '送信に失敗しました。', true);
+          return;
+        }
+
+        showPanel('completed');
+        setStatus('安否確認を送信しました。');
+      } catch (err) {
+        setStatus('送信に失敗しました。' + err.message, true);
+      }
+    });
+
+    init();
+  </script>
+</body>
+</html>
