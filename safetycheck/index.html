@@ -211,7 +211,29 @@
     const GAS_API_URL = PAGE_CONFIG.gasUrl || "";
     const LIFF_ID = PAGE_CONFIG.liffId || "2008893549-jeCNKx4Y";
     const params = new URLSearchParams(window.location.search);
-    const surveyId = params.get('sid') || '';
+
+    function resolveSurveyIdFromUrl() {
+      const directSid = params.get('sid');
+      if (directSid) {
+        return directSid;
+      }
+
+      const encodedState = params.get('liff.state');
+      if (!encodedState) {
+        return '';
+      }
+
+      try {
+        const decoded = decodeURIComponent(encodedState);
+        const stateParams = new URLSearchParams(decoded.startsWith('?') ? decoded.slice(1) : decoded);
+        return stateParams.get('sid') || '';
+      } catch (err) {
+        console.warn('Failed to decode liff.state', err);
+        return '';
+      }
+    }
+
+    const surveyId = resolveSurveyIdFromUrl();
     const lineIdParam = params.get('line_id') || '';
 
     const registerPanel = document.getElementById('register-panel');
