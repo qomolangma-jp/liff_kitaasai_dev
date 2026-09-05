@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>安否確認001</title>
+  <title>安否確認002</title>
   <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
     :root {
@@ -187,6 +187,43 @@
       font-size: 13px;
       box-shadow: none;
     }
+    .soft-warning {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid #fdba74;
+      background: #fff7ed;
+      color: #9a4d00;
+      display: none;
+    }
+    .soft-warning.visible {
+      display: block;
+    }
+    .soft-warning__title {
+      font-size: 13px;
+      font-weight: 800;
+      margin: 0;
+    }
+    .soft-warning__text {
+      margin: 8px 0 0;
+      font-size: 13px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .soft-warning__btn {
+      margin-top: 10px;
+      width: auto;
+      min-width: 128px;
+      padding: 9px 14px;
+      border-radius: 10px;
+      border: 1px solid #f59e0b;
+      background: #fff;
+      color: #92400e;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -269,6 +306,11 @@
           <button id="debug-start-btn" type="button">開始</button>
         </div>
       </div>
+      <div id="soft-warning" class="soft-warning">
+        <p class="soft-warning__title">通信エラーが発生しています</p>
+        <p id="soft-warning-text" class="soft-warning__text"></p>
+        <button id="soft-warning-retry" class="soft-warning__btn" type="button">再試行</button>
+      </div>
       <div id="status" class="status"></div>
     </div>
   </div>
@@ -324,13 +366,19 @@
     const debugPanel = document.getElementById('debug-panel');
     const debugSidInput = document.getElementById('debug-sid-input');
     const debugStartBtn = document.getElementById('debug-start-btn');
+    const softWarning = document.getElementById('soft-warning');
+    const softWarningText = document.getElementById('soft-warning-text');
+    const softWarningRetry = document.getElementById('soft-warning-retry');
     const statusEl = document.getElementById('status');
     const surveyTitle = document.getElementById('survey-title');
+    const submitBtn = document.getElementById('submit-btn');
+    const registerBtn = document.getElementById('register-btn');
 
     const state = {
       lineId: '',
       registered: false,
-      surveyTitle: '安否確認'
+      surveyTitle: '安否確認',
+      isInitRunning: false
     };
 
     function setStatus(text, isError) {
@@ -342,6 +390,32 @@
       registerPanel.style.display = name === 'register' ? 'block' : 'none';
       surveyPanel.style.display = name === 'survey' ? 'block' : 'none';
       completedPanel.style.display = name === 'completed' ? 'block' : 'none';
+    }
+
+    function showSoftWarning(message) {
+      if (!softWarning || !softWarningText) {
+        return;
+      }
+      softWarningText.textContent = message || '通信状態が不安定です。しばらく待って再試行してください。';
+      softWarning.classList.add('visible');
+    }
+
+    function hideSoftWarning() {
+      if (!softWarning || !softWarningText) {
+        return;
+      }
+      softWarning.classList.remove('visible');
+      softWarningText.textContent = '';
+    }
+
+    function enterGracefulMode(message) {
+      if (!state.lineId) {
+        state.lineId = lineIdParam || 'fallback_user';
+      }
+
+      showPanel('survey');
+      setStatus('初期化に一部失敗しました。入力内容は保持したまま再試行できます。', false);
+      showSoftWarning(message);
     }
 
     function renderDebugBanner() {
@@ -549,18 +623,28 @@
     }
 
     async function init() {
-      if (!GAS_API_URL) {
-        setStatus('GAS URL が未設定です。Script Properties の SURVEY_BASE_URL を確認してください。', true);
+      if (state.isInitRunning) {
+        return;
+      }
+
+      state.isInitRunning = true;
+
+      if (!GAS_API_URL && !SAFETYCHECK_GATEWAY_URL) {
+        setStatus('GAS URL もしくは gatewayUrl が未設定です。設定を確認してください。', true);
+        state.isInitRunning = false;
         return;
       }
 
       if (!surveyId) {
         renderDebugPanel();
         setStatus('URL に sid が含まれていません。生成済みの安否確認 URL を開いてください。', true);
+        state.isInitRunning = false;
         return;
       }
 
       try {
+        hideSoftWarning();
+
         if (!window.liff) {
           throw new Error('LIFF SDK が読み込まれていません。LINE で開いてください。');
         }
@@ -606,13 +690,22 @@
         console.error('safetycheck init failed:', err);
         const message = err && err.message ? err.message : '不明なエラー';
         const userMessage = isLocalDebugMode()
-          ? 'PC検証モードです。LIFF は使わず、GAS へ直接アクセスしています。\n' + message
-          : '初期化に失敗しました。LINEアプリ内から開いてください。' + '\n' + message;
-        setStatus(userMessage, true);
+          ? 'PC検証モードで初期化の一部に失敗しました。\n' + message
+          : '初期化に失敗しました。通信を再試行してください。\n' + message;
+        enterGracefulMode(userMessage);
+      } finally {
+        state.isInitRunning = false;
       }
     }
 
-    document.getElementById('register-btn').addEventListener('click', async function () {
+    if (softWarningRetry) {
+      softWarningRetry.addEventListener('click', function () {
+        setStatus('再接続を試みています...', false);
+        init();
+      });
+    }
+
+    registerBtn.addEventListener('click', async function () {
       const name = document.getElementById('register_name').value.trim();
       const group = document.getElementById('register_group').value;
 
@@ -640,10 +733,11 @@
       } catch (err) {
         const message = err && err.message ? err.message : '不明なエラー';
         setStatus('登録に失敗しました。' + message, true);
+        showSoftWarning('登録送信に失敗しました。通信を確認して再試行してください。\n' + message);
       }
     });
 
-    document.getElementById('submit-btn').addEventListener('click', async function () {
+    submitBtn.addEventListener('click', async function () {
       const selected = document.querySelector('input[name="answer"]:checked');
       if (!selected) {
         setStatus('現在の状況を選択してください。', true);
@@ -672,6 +766,7 @@
       } catch (err) {
         const message = err && err.message ? err.message : '不明なエラー';
         setStatus('送信に失敗しました。' + message, true);
+        showSoftWarning('送信に失敗しました。選択状態は保持されています。時間をおいて再試行してください。\n' + message);
       }
     });
 
