@@ -319,3 +319,49 @@ function getSafetyCheckConfig() {
     accessLogSheet: APP_CONFIG.sheets.safetyCheckAccessLog || 'survey_access_log'
   };
 }
+
+function debugSafetyCheckOpen() {
+  var testSurveyId = 'sc_20260905_162817_0989e6';
+  var testLineId = 'U55a2432dba0568deec6854f249cd06c0';
+  var result = handleSafetyCheckOpen({
+    surveyId: testSurveyId,
+    lineId: testLineId
+  });
+  Logger.log('debugSafetyCheckOpen result: ' + JSON.stringify(result));
+  return result;
+}
+
+function debugSafetyCheckRoute() {
+  var e = {
+    parameter: {
+      action: 'safety_check',
+      sid: 'sc_20260905_162817_0989e6',
+      line_id: 'U55a2432dba0568deec6854f249cd06c0'
+    }
+  };
+
+  var result = doGet(e);
+  Logger.log('debugSafetyCheckRoute response: ' + result.getContent());
+  return result;
+}
+
+function debugSafetyCheckPostSubmit() {
+  var payload = {
+    action: 'safety_check_submit',
+    survey_id: 'sc_20260905_162817_0989e6',
+    line_id: 'U55a2432dba0568deec6854f249cd06c0',
+    answer_status: 'safe',
+    remarks: 'debug test',
+    user_name: 'デバッグユーザー',
+    group_name: '1班',
+    accessed_at: new Date().toISOString()
+  };
+
+  var result = doPost({
+    postData: {
+      contents: JSON.stringify(payload)
+    }
+  });
+  Logger.log('debugSafetyCheckPostSubmit response: ' + result.getContent());
+  return result;
+}
