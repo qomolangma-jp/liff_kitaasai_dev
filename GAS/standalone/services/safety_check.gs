@@ -39,7 +39,7 @@ function issueSafetyCheckUrl(input) {
   var issuedUrl = baseUrl + (baseUrl.indexOf('?') === -1 ? '?' : '&') + 'action=safety_check&sid=' + encodeURIComponent(surveyId);
 
   var sheet = getOrCreateSheet(
-    APP_CONFIG.spreadsheets.member,
+    APP_CONFIG.spreadsheets.safetyCheck || APP_CONFIG.spreadsheets.member,
     APP_CONFIG.sheets.safetyCheckSettings,
     ['survey_id', 'title', 'created_at', 'published_at', 'issued_url', 'status']
   );
@@ -64,7 +64,7 @@ function handleSafetyCheckOpen(input) {
   }
 
   var sheet = getOrCreateSheet(
-    APP_CONFIG.spreadsheets.member,
+    APP_CONFIG.spreadsheets.safetyCheck || APP_CONFIG.spreadsheets.member,
     APP_CONFIG.sheets.safetyCheckSettings,
     ['survey_id', 'title', 'created_at', 'published_at', 'issued_url', 'status']
   );
@@ -219,7 +219,7 @@ function handleSafetyCheckSubmit(payload) {
   var groupName = member && member.group ? member.group : (payload && payload.group_name ? payload.group_name : '');
 
   var sheet = getOrCreateSheet(
-    APP_CONFIG.spreadsheets.member,
+    APP_CONFIG.spreadsheets.safetyCheck || APP_CONFIG.spreadsheets.member,
     APP_CONFIG.sheets.safetyCheckResponses,
     ['response_id', 'survey_id', 'line_user_id', 'accessed_at', 'submitted_at', 'user_name', 'group_name', 'answer_status', 'is_registered', 'target_id', 'remarks']
   );
@@ -262,7 +262,7 @@ function appendSafetyAccessLog(data) {
   try {
     var record = data || {};
     var sheet = getOrCreateSheet(
-      APP_CONFIG.spreadsheets.member,
+      APP_CONFIG.spreadsheets.safetyCheck || APP_CONFIG.spreadsheets.member,
       APP_CONFIG.sheets.safetyCheckAccessLog,
       ['log_id', 'survey_id', 'line_user_id', 'event_type', 'event_at', 'detail']
     );

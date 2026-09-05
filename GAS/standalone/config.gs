@@ -31,6 +31,7 @@ var APP_CONFIG = (function buildConfig() {
     },
     spreadsheets: {
       member: get("SS_MEMBER_ID", ""),
+      safetyCheck: get("SS_SAFETY_CHECK_ID", get("SS_MEMBER_ID", "")),
       bookroom: get("SS_BOOKROOM_ID", ""),
       chat: get("SS_CHAT_ID", get("SS_BOOKROOM_ID", "")),
       notice: get("SS_NOTICE_ID", ""),
