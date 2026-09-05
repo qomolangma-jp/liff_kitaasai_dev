@@ -63,7 +63,11 @@ function handleSafetyCheckOpen(input) {
     return { status: 'error', message: 'survey_id is required' };
   }
 
-  var sheet = getSheetOrThrow(APP_CONFIG.spreadsheets.member, APP_CONFIG.sheets.safetyCheckSettings);
+  var sheet = getOrCreateSheet(
+    APP_CONFIG.spreadsheets.member,
+    APP_CONFIG.sheets.safetyCheckSettings,
+    ['survey_id', 'title', 'created_at', 'published_at', 'issued_url', 'status']
+  );
   var values = sheet.getDataRange().getDisplayValues();
   if (values.length <= 1) {
     return { status: 'error', message: 'survey not found' };
@@ -123,7 +127,11 @@ function handleSafetyCheckRegister(payload) {
     return { status: 'error', message: 'name and group are required' };
   }
 
-  var sheet = getSheetOrThrow(APP_CONFIG.spreadsheets.member, APP_CONFIG.sheets.memberMain);
+  var sheet = getOrCreateSheet(
+    APP_CONFIG.spreadsheets.member,
+    APP_CONFIG.sheets.memberMain,
+    ['line_id', 'name_1st', 'name_2nd', 'group', 'status', 'updated_at']
+  );
   var values = sheet.getDataRange().getDisplayValues();
   if (values.length === 0) {
     sheet.appendRow(['line_id', 'name_1st', 'name_2nd', 'group', 'status', 'updated_at']);
@@ -273,7 +281,11 @@ function appendSafetyAccessLog(data) {
 }
 
 function findMemberByLineId(lineId) {
-  var memberSheet = getSheetOrThrow(APP_CONFIG.spreadsheets.member, APP_CONFIG.sheets.memberMain);
+  var memberSheet = getOrCreateSheet(
+    APP_CONFIG.spreadsheets.member,
+    APP_CONFIG.sheets.memberMain,
+    ['line_id', 'name_1st', 'name_2nd', 'group', 'status', 'updated_at']
+  );
   var values = memberSheet.getDataRange().getDisplayValues();
   if (values.length <= 1) {
     return { isRegistered: false, fullName: '', group: '' };
