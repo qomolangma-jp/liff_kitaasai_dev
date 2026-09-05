@@ -36,6 +36,7 @@ function issueSafetyCheckUrl(input) {
     throw new Error('SURVEY_BASE_URL is missing. Set it to the deployed Web App URL.');
   }
 
+  baseUrl = normalizeGasWebAppUrl(baseUrl);
   var issuedUrl = baseUrl + (baseUrl.indexOf('?') === -1 ? '?' : '&') + 'action=safety_check&sid=' + encodeURIComponent(surveyId);
   var liffUrl = buildSafetyCheckLiffUrl(surveyId);
 
@@ -55,6 +56,14 @@ function issueSafetyCheckUrl(input) {
     liff_url: liffUrl,
     created_at: now
   };
+}
+
+function normalizeGasWebAppUrl(url) {
+  var value = String(url || '').trim();
+  if (!value) {
+    return '';
+  }
+  return value.replace(/^https:\/\/script\.google\.com\/a\/macros\/[^/]+\/s\//, 'https://script.google.com/macros/s/');
 }
 
 function buildSafetyCheckLiffUrl(surveyId) {

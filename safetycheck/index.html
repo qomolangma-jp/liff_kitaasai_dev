@@ -276,7 +276,18 @@
   <script src="../common/app-config.js"></script>
   <script>
     const PAGE_CONFIG = (window.AppConfig && window.AppConfig.getPageConfig('safetycheck')) || {};
-    const GAS_API_URL = PAGE_CONFIG.gasUrl || "";
+
+    function normalizeGasWebAppUrl(url) {
+      const value = String(url || '').trim();
+      if (!value) return '';
+      return value.replace(
+        /^https:\/\/script\.google\.com\/a\/macros\/[^/]+\/s\//,
+        'https://script.google.com/macros/s/'
+      );
+    }
+
+    const GAS_API_URL_RAW = PAGE_CONFIG.gasUrl || "";
+    const GAS_API_URL = normalizeGasWebAppUrl(GAS_API_URL_RAW);
     const LIFF_ID = PAGE_CONFIG.liffId || "2008893549-jeCNKx4Y";
     const params = new URLSearchParams(window.location.search);
 
@@ -342,6 +353,8 @@
         'PC検証モード',
         'sid: ' + (surveyId || '(未設定)'),
         'line_id: ' + (lineIdParam || '(未設定)'),
+        'gas_url(raw): ' + (GAS_API_URL_RAW || '(未設定)'),
+        'gas_url(normalized): ' + (GAS_API_URL || '(未設定)'),
         'URL: ' + currentUrl,
         '使い方: ?sid=...&debug=1&line_id=pc001 の形式で開いてください。'
       ];
@@ -403,9 +416,9 @@
       debugStartBtn.addEventListener('click', openDebugSurvey);
     }
 
-    function requestGasJsonp(params) {
+    function requestGasJsonpOnce(baseUrl, params) {
       return new Promise((resolve, reject) => {
-        if (!GAS_API_URL) {
+        if (!baseUrl) {
           reject(new Error('GAS URL が未設定です。Script Properties の SURVEY_BASE_URL を確認してください。'));
           return;
         }
@@ -453,17 +466,44 @@
 
         script.onerror = () => {
           cleanup();
-          reject(new Error('GAS への通信に失敗しました。Web App URL が正しいか、LINEアプリ内で開いているか確認してください。'));
+          reject(new Error('GAS への通信に失敗しました。URL: ' + baseUrl));
         };
 
         timerId = window.setTimeout(() => {
           cleanup();
-          reject(new Error('GAS への通信がタイムアウトしました。Web App URL または GAS の公開設定を確認してください。'));
+          reject(new Error('GAS への通信がタイムアウトしました。URL: ' + baseUrl));
         }, 15000);
 
-        script.src = `${GAS_API_URL}?${query.toString()}`;
+        script.src = `${baseUrl}?${query.toString()}`;
         document.head.appendChild(script);
       });
+    }
+
+    async function requestGasJsonp(params) {
+      const candidates = [];
+      if (GAS_API_URL) {
+        candidates.push(GAS_API_URL);
+      }
+
+      const rawNormalized = normalizeGasWebAppUrl(GAS_API_URL_RAW);
+      if (rawNormalized && !candidates.includes(rawNormalized)) {
+        candidates.push(rawNormalized);
+      }
+
+      if (!candidates.length) {
+        throw new Error('GAS URL が未設定です。Script Properties の SURVEY_BASE_URL を確認してください。');
+      }
+
+      let lastError = null;
+      for (const candidateUrl of candidates) {
+        try {
+          return await requestGasJsonpOnce(candidateUrl, params);
+        } catch (err) {
+          lastError = err;
+        }
+      }
+
+      throw new Error('GAS への通信に失敗しました。Web App URL または公開設定を確認してください。 / 詳細: ' + (lastError && lastError.message ? lastError.message : '不明なエラー'));
     }
 
     async function init() {
