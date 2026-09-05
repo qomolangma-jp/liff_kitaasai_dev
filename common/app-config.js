@@ -1,5 +1,5 @@
 (function (global) {
-  var SHARED_GAS_URL = "https://script.google.com/macros/s/AKfycbxmI70LPhm1N9bVVLIp9lpSmnitUJDYl4B9rYN_llimMfPgDRTEjVM_6vgCgx9aDZs9/exec";
+  var SHARED_GAS_URL = "https://script.google.com/macros/s/AKfycbxZ4DsqsChCqGXIyUmmEuKlc7QbPdWmgX-k0Sx_LKOZ83I2hLBzJJ6yx0HkaQzmkvaw/exec";
 
   var PAGE_CONFIGS = {
     profile: {
