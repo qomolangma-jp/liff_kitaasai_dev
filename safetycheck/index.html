@@ -524,7 +524,7 @@
         console.error('safetycheck init failed:', err);
         const message = err && err.message ? err.message : '不明なエラー';
         const userMessage = isLocalDebugMode()
-          ? 'ローカル環境では LIFF を使えません。LINEアプリ内で開いてください。'
+          ? 'PC検証モードです。LIFF は使わず、GAS へ直接アクセスしています。\n' + message
           : '初期化に失敗しました。LINEアプリ内から開いてください。' + '\n' + message;
         setStatus(userMessage, true);
       }
