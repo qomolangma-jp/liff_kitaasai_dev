@@ -3,107 +3,115 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Kitaasai DX | LIFF + GAS + Spreadsheet システム群</title>
+    <title>町内会DX | スマホでらくらく！新しい地域の助け合い・連絡のカタチ</title>
     <meta
       name="description"
-      content="LINE連携のLIFFアプリ、Google Apps Scriptバックエンド、スプレッドシート管理を統合したコミュニティ運営システム群の紹介ページ。"
+      content="LINEとGoogleで町内会の準備や連絡がとっても便利に！紙の回覧板や出欠集計の手間をなくし、みんなが笑顔になれる新しい町内会DX。"
     />
     <style>
       :root {
-        --bg: #f6f9ff;
-        --bg-strong: #edf4ff;
-        --surface: rgba(255,255,255,0.9);
-        --surface-strong: #ffffff;
-        --primary: #1e6ef2;
-        --primary-dark: #174db7;
-        --primary-soft: #eaf3ff;
-        --accent: #21c27d;
-        --accent-soft: #ebfff5;
-        --text: #13233a;
-        --muted: #58708d;
-        --line: rgba(19, 35, 58, 0.08);
-        --warning: #ffb84d;
-        --shadow: 0 18px 48px rgba(23, 77, 183, 0.12);
-        --radius: 22px;
+        --bg: #fffbf5;
+        --surface: #ffffff;
+        --primary: #ff5e36;
+        --primary-dark: #e03e12;
+        --primary-light: #ffebe5;
+        --accent-yellow: #ffc107;
+        --accent-pink: #ff4081;
+        --accent-green: #06c755;
+        --text: #4a2c11;
+        --muted: #7d5a3c;
+        --line: #ffe2cc;
+        --card-shadow: 0 15px 35px rgba(255, 94, 54, 0.12);
+        --radius: 28px;
       }
 
       * { box-sizing: border-box; }
       html { scroll-behavior: smooth; }
       body {
         margin: 0;
-        font-family: "Hiragino Sans", "Yu Gothic", "Segoe UI", sans-serif;
+        font-family: "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
         background:
-          radial-gradient(circle at top left, rgba(30,110,242,0.08), transparent 30%),
-          radial-gradient(circle at top right, rgba(33,194,125,0.08), transparent 24%),
+          radial-gradient(circle at top left, #fff0df, transparent 40%),
+          radial-gradient(circle at top right, #ffe5e0, transparent 35%),
           var(--bg);
         color: var(--text);
-        line-height: 1.7;
+        line-height: 1.8;
       }
 
       a { color: inherit; text-decoration: none; }
-      img { max-width: 100%; display: block; }
+      img { max-width: 100%; height: auto; display: block; border-radius: 20px; }
 
       .container {
         width: min(1180px, calc(100% - 32px));
         margin: 0 auto;
       }
 
+      /* ヘッダー */
       .topbar {
         position: sticky;
         top: 0;
         z-index: 1000;
-        backdrop-filter: blur(10px);
-        background: rgba(246, 249, 255, 0.88);
-        border-bottom: 1px solid var(--line);
+        backdrop-filter: blur(12px);
+        background: rgba(255, 251, 245, 0.92);
+        border-bottom: 2px solid var(--line);
       }
 
       .topbar-inner {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        min-height: 74px;
+        min-height: 76px;
       }
 
       .brand {
-        display: flex; align-items: center; gap: 12px;
-        font-weight: 800;
-        letter-spacing: 0.02em;
+        display: flex; align-items: center; gap: 10px;
+        font-weight: 900;
+        font-size: 1.4rem;
+        color: var(--primary-dark);
       }
 
       .brand-mark {
-        width: 38px; height: 38px;
-        border-radius: 12px;
-        background: linear-gradient(135deg, var(--primary), #5b8df7);
+        width: 44px; height: 44px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #ff9100, #ff3d00);
         color: white;
         display: grid; place-items: center;
-        box-shadow: var(--shadow);
-        font-size: 18px;
+        box-shadow: 0 6px 14px rgba(255, 61, 0, 0.3);
+        font-size: 22px;
       }
 
       .nav {
-        display: flex; align-items: center; gap: 24px;
-        color: var(--muted);
-        font-size: 0.96rem;
+        display: flex; align-items: center; gap: 20px;
+        font-weight: 800;
+        font-size: 1.05rem;
       }
 
       .nav a:hover { color: var(--primary); }
 
       .nav-cta {
-        padding: 12px 18px;
+        padding: 12px 26px;
         border-radius: 999px;
-        background: var(--primary);
+        background: var(--accent-green);
         color: white;
-        font-weight: 700;
-        box-shadow: 0 10px 20px rgba(30,110,242,0.22);
+        font-weight: 900;
+        box-shadow: 0 8px 20px rgba(6, 199, 85, 0.3);
+        transition: transform .2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
       }
+      .nav-cta:hover { transform: scale(1.05); }
 
+      /* メインヒーロー（FV） */
       .hero {
-        padding: 92px 0 56px;
+        padding: 50px 0 60px;
+        position: relative;
+        overflow: hidden;
       }
 
       .hero-grid {
         display: grid;
-        grid-template-columns: 1.2fr 0.8fr;
+        grid-template-columns: 1.1fr 0.9fr;
         gap: 32px;
         align-items: center;
       }
@@ -112,640 +120,736 @@
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        padding: 8px 14px;
+        padding: 8px 20px;
         border-radius: 999px;
-        font-size: 0.82rem;
-        background: var(--primary-soft);
-        color: var(--primary-dark);
-        font-weight: 800;
-        border: 1px solid rgba(30,110,242,0.12);
+        font-size: 0.98rem;
+        background: #fff0bb;
+        color: #b35900;
+        font-weight: 900;
+        border: 2px solid var(--accent-yellow);
+        box-shadow: 0 4px 10px rgba(255, 193, 7, 0.3);
       }
 
       h1 {
         margin: 18px 0 20px;
-        font-size: clamp(2.5rem, 5vw, 5rem);
-        line-height: 1.04;
-        letter-spacing: -0.06em;
+        font-size: clamp(2.1rem, 4.2vw, 3.4rem);
+        line-height: 1.35;
+        letter-spacing: -0.02em;
+        font-weight: 900;
+        color: #3d1e03;
+      }
+
+      .highlight {
+        background: linear-gradient(transparent 60%, #ffc107 60%);
+        padding: 0 4px;
       }
 
       .lead {
-        font-size: 1.14rem;
+        font-size: 1.2rem;
         color: var(--muted);
-        max-width: 680px;
+        font-weight: 700;
+        margin-bottom: 30px;
       }
 
-      .hero-actions {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        margin-top: 28px;
-        flex-wrap: wrap;
-      }
-
-      .btn {
+      .btn-line {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        border-radius: 14px;
-        padding: 16px 22px;
-        font-weight: 800;
+        gap: 12px;
+        border-radius: 999px;
+        padding: 20px 40px;
+        font-weight: 900;
+        font-size: 1.3rem;
         transition: .2s ease;
-      }
-
-      .btn.primary {
-        background: linear-gradient(135deg, var(--primary), #244fcb);
+        text-align: center;
+        cursor: pointer;
+        border: none;
+        text-decoration: none;
+        background: linear-gradient(135deg, #06c755, #00b900);
         color: white;
-        box-shadow: 0 16px 26px rgba(30,110,242,0.26);
+        box-shadow: 0 14px 28px rgba(6, 199, 85, 0.35);
       }
-
-      .btn.secondary {
-        border: 1px solid var(--line);
-        background: rgba(255,255,255,0.7);
-        color: var(--text);
+      .btn-line:hover {
+        transform: translateY(-3px) scale(1.02);
+        box-shadow: 0 18px 34px rgba(6, 199, 85, 0.45);
       }
 
       .hero-badges {
         display: flex;
         gap: 12px;
         flex-wrap: wrap;
-        margin-top: 22px;
+        margin-top: 28px;
       }
 
       .badge {
         background: white;
-        border: 1px solid var(--line);
+        border: 2px solid #ffd5b5;
         border-radius: 999px;
-        padding: 8px 12px;
-        font-size: 0.8rem;
-        color: var(--muted);
-        font-weight: 700;
+        padding: 8px 18px;
+        font-size: 0.92rem;
+        color: var(--primary-dark);
+        font-weight: 900;
+        box-shadow: 0 4px 12px rgba(255, 94, 54, 0.08);
       }
 
-      .showcase {
-        background: linear-gradient(180deg, #ffffff, #eef5ff);
-        border: 1px solid var(--line);
-        border-radius: 28px;
-        padding: 20px;
-        box-shadow: var(--shadow);
+      .hero-img-box {
+        position: relative;
       }
 
-      .diagram-box {
-        background: linear-gradient(180deg, #fff, #f4f9ff);
-        border: 1px solid var(--line);
-        border-radius: 22px;
-        padding: 18px;
+      .hero-img-box img {
+        box-shadow: var(--card-shadow);
+        border: 4px solid white;
       }
 
-      .diagram-box h3 {
-        margin: 0 0 10px; font-size: 1.05rem;
-      }
-
-      .stack {
-        display: grid;
-        gap: 12px;
-      }
-
-      .stack-item {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 12px 14px;
-        border-radius: 16px;
+      .hero-img-badge {
+        position: absolute;
+        bottom: -20px;
+        left: -20px;
         background: white;
-        border: 1px solid var(--line);
+        padding: 16px 24px;
+        border-radius: 24px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+        font-weight: 900;
+        color: var(--primary-dark);
+        border: 2px solid #ffe2cc;
       }
 
-      .stack-icon {
-        width: 38px; height: 38px;
-        border-radius: 12px;
-        display: grid; place-items: center;
-        font-weight: 800;
-        font-size: 1rem;
-      }
-
-      .blue { background: var(--primary-soft); color: var(--primary-dark); }
-      .green { background: var(--accent-soft); color: #138f61; }
-      .orange { background: #fff3df; color: #b76700; }
-      .purple { background: #f0ebff; color: #6047d7; }
-
+      /* 共通セクション */
       section {
-        padding: 86px 0;
+        padding: 80px 0;
       }
 
       .section-head {
         text-align: center;
-        max-width: 740px;
-        margin: 0 auto 42px;
+        max-width: 820px;
+        margin: 0 auto 50px;
       }
 
       .section-head h2 {
-        margin: 0 0 14px;
-        font-size: clamp(2rem, 4vw, 3.2rem);
-        letter-spacing: -0.06em;
+        margin: 0 0 16px;
+        font-size: clamp(1.9rem, 3.4vw, 2.7rem);
+        line-height: 1.35;
+        font-weight: 900;
+        color: #3d1e03;
       }
 
       .section-head p {
         margin: 0;
         color: var(--muted);
-        font-size: 1.05rem;
+        font-size: 1.15rem;
+        font-weight: 700;
       }
 
+      /* お悩みセクション */
+      .problem-section {
+        background: #fff4ea;
+        border-top: 2px solid var(--line);
+        border-bottom: 2px solid var(--line);
+      }
+
+      .problem-flex {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 40px;
+        align-items: center;
+        max-width: 1000px;
+        margin: 0 auto 40px;
+      }
+
+      .problem-grid {
+        display: grid;
+        gap: 18px;
+      }
+
+      .problem-card {
+        background: white;
+        border: 2px solid #ffcca3;
+        border-radius: 24px;
+        padding: 20px 24px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.03);
+      }
+
+      .problem-card .emo {
+        font-size: 2rem;
+        flex-shrink: 0;
+      }
+
+      .problem-card p {
+        margin: 0;
+        font-weight: 800;
+        font-size: 1.05rem;
+        color: #4a2c11;
+      }
+
+      .problem-summary {
+        text-align: center;
+        background: linear-gradient(135deg, #ffe0b2, #ffcc80);
+        border-radius: 28px;
+        padding: 30px;
+        max-width: 860px;
+        margin: 0 auto;
+        box-shadow: 0 10px 24px rgba(255, 152, 0, 0.2);
+      }
+
+      .problem-summary p {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 900;
+        color: #3e1a00;
+        line-height: 1.7;
+      }
+
+      /* 解決策・機能一覧 */
       .grid-3 {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 22px;
+        gap: 24px;
       }
 
       .card {
-        background: rgba(255,255,255,0.9);
-        border: 1px solid var(--line);
+        background: white;
+        border: 3px solid #ffe2cc;
         border-radius: var(--radius);
-        padding: 26px 22px;
-        box-shadow: 0 12px 28px rgba(19,35,58,0.04);
+        overflow: hidden;
+        box-shadow: var(--card-shadow);
+        transition: transform .2s ease;
       }
 
-      .mini-tag {
-        display: inline-block;
-        background: var(--primary-soft);
-        color: var(--primary-dark);
-        padding: 6px 10px;
-        border-radius: 999px;
-        font-weight: 800;
-        font-size: 0.76rem;
-        margin-bottom: 14px;
+      .card:hover {
+        transform: translateY(-6px);
+        border-color: var(--primary);
+      }
+
+      .card-img-wrapper {
+        height: 180px;
+        overflow: hidden;
+      }
+
+      .card-img-wrapper img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 0;
+      }
+
+      .card-body {
+        padding: 24px;
       }
 
       .card h3 {
-        margin: 0 0 10px;
-        font-size: 1.32rem;
+        margin: 0 0 12px;
+        font-size: 1.3rem;
+        font-weight: 900;
+        color: var(--primary-dark);
+        display: flex;
+        align-items: center;
+        gap: 8px;
       }
 
       .card p {
         margin: 0;
         color: var(--muted);
+        font-size: 1rem;
+        font-weight: 700;
       }
 
-      .flow {
+      /* メリット・わくわく理由 */
+      .benefits-section {
+        background: linear-gradient(180deg, #fffbf5 0%, #fff0e5 100%);
+        border-top: 2px solid var(--line);
+        border-bottom: 2px solid var(--line);
+      }
+
+      .benefit-box {
+        background: white;
+        border-radius: 32px;
+        padding: 28px;
+        border: 3px solid var(--line);
+        box-shadow: var(--card-shadow);
+        margin-bottom: 30px;
         display: grid;
-        gap: 18px;
+        grid-template-columns: 280px 1fr;
+        gap: 30px;
+        align-items: center;
       }
 
-      .flow-step {
-        display: grid;
-        grid-template-columns: 88px 1fr;
-        align-items: start;
-        gap: 18px;
-        background: rgba(255,255,255,0.85);
-        border: 1px solid var(--line);
-        border-radius: 20px;
-        padding: 20px 18px;
+      .benefit-img img {
+        width: 100%;
+        height: 180px;
+        object-fit: cover;
       }
 
-      .flow-step .step-number {
-        width: 56px; height: 56px;
-        border-radius: 14px;
-        display: grid; place-items: center;
+      .benefit-content h3 {
+        margin: 0 0 12px;
+        font-size: 1.4rem;
         font-weight: 900;
-        background: linear-gradient(135deg, var(--primary), #6a98ff);
+        color: #3d1e03;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .benefit-badge-mini {
+        background: linear-gradient(135deg, var(--accent-yellow), #ff9100);
         color: white;
-        box-shadow: 0 12px 28px rgba(30,110,242,0.24);
+        font-size: 1.1rem;
+        padding: 2px 14px;
+        border-radius: 999px;
       }
 
-      .flow-step h4 {
-        margin: 0 0 8px; font-size: 1.15rem;
-      }
-
-      .flow-step p {
-        margin: 0; color: var(--muted);
-      }
-
-      .stats {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 18px;
-        margin-top: 28px;
-      }
-
-      .stat {
-        text-align: center;
-        padding: 26px 16px;
-        background: rgba(255,255,255,0.85);
-        border: 1px solid var(--line);
-        border-radius: 20px;
-      }
-
-      .stat strong {
-        display: block;
-        font-size: clamp(1.8rem, 3vw, 2.8rem);
-        letter-spacing: -0.06em;
-      }
-
-      .stat span {
+      .benefit-content p {
+        margin: 0;
+        font-size: 1.08rem;
         color: var(--muted);
         font-weight: 700;
       }
 
-      .system-list {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 18px;
+      /* 簡単比較表 */
+      .compare-box {
+        background: white;
+        border-radius: 32px;
+        padding: 36px;
+        border: 3px solid var(--line);
+        box-shadow: var(--card-shadow);
+        margin-top: 50px;
       }
 
-      .system-item {
-        display: flex;
-        gap: 16px;
-        padding: 20px;
-        background: rgba(255,255,255,0.9);
-        border: 1px solid var(--line);
-        border-radius: 20px;
-      }
-
-      .system-item .icon {
-        flex-shrink: 0;
-        width: 52px; height: 52px;
-        border-radius: 16px;
-        display: grid; place-items: center;
-        font-size: 1.3rem;
-        background: var(--primary-soft);
+      .compare-box h3 {
+        text-align: center;
+        margin: 0 0 28px;
+        font-size: 1.6rem;
+        font-weight: 900;
         color: var(--primary-dark);
       }
 
-      .system-item h4 {
-        margin: 0 0 8px;
-        font-size: 1.1rem;
-      }
-
-      .system-item p {
-        margin: 0;
-        color: var(--muted);
-      }
-
-      .compare {
+      .compare-table {
         width: 100%;
         border-collapse: collapse;
-        background: rgba(255,255,255,0.9);
-        border: 1px solid var(--line);
-        border-radius: 20px;
-        overflow: hidden;
       }
 
-      .compare th,
-      .compare td {
-        padding: 18px 16px;
-        border-bottom: 1px solid var(--line);
+      .compare-table th,
+      .compare-table td {
+        padding: 18px;
+        border-bottom: 2px solid var(--line);
         text-align: left;
-        vertical-align: top;
+        font-size: 1.05rem;
       }
 
-      .compare th {
-        background: var(--primary-soft);
+      .compare-table th {
+        background: #fff3e6;
+        color: #3d1e03;
+        font-weight: 900;
+      }
+
+      .compare-table td strong {
         color: var(--primary-dark);
-        font-size: 0.96rem;
+        font-weight: 900;
       }
 
-      .compare tr:last-child td { border-bottom: none; }
+      /* 今だけの限定枠 */
+      .limited-section {
+        padding: 50px 0;
+      }
 
-      .cta {
-        padding: 70px 0 100px;
+      .limited-card {
+        background: linear-gradient(135deg, #fff3cd, #ffe8a1);
+        border: 3px dashed #ffb300;
+        border-radius: 32px;
+        padding: 40px 30px;
+        text-align: center;
+        max-width: 900px;
+        margin: 0 auto;
+        box-shadow: 0 12px 30px rgba(255, 179, 0, 0.25);
+      }
+
+      .limited-badge {
+        display: inline-block;
+        background: #ff1744;
+        color: white;
+        font-weight: 900;
+        padding: 8px 24px;
+        border-radius: 999px;
+        font-size: 1rem;
+        margin-bottom: 18px;
+        box-shadow: 0 6px 14px rgba(255, 23, 68, 0.3);
+      }
+
+      .limited-card h3 {
+        margin: 0 0 16px;
+        font-size: clamp(1.5rem, 2.8vw, 2rem);
+        color: #3e1a00;
+        font-weight: 900;
+      }
+
+      .limited-card p {
+        margin: 0;
+        font-size: 1.15rem;
+        color: #4a2c11;
+        font-weight: 700;
+        line-height: 1.8;
+      }
+
+      /* CTA・LINE案内 */
+      .cta-section {
+        padding: 70px 0 90px;
       }
 
       .cta-panel {
-        background: linear-gradient(120deg, var(--primary), #2649c5 50%, #1a5ae0 100%);
+        background: linear-gradient(135deg, #ff6d00, #ff3d00);
+        border-radius: 40px;
+        padding: clamp(30px, 5vw, 60px);
+        color: white;
+        box-shadow: 0 28px 56px rgba(255, 61, 0, 0.35);
+        text-align: center;
+      }
+
+      .cta-head {
+        max-width: 760px;
+        margin: 0 auto 30px;
+      }
+
+      .cta-head h2 {
+        margin: 0 0 16px;
+        font-size: clamp(2rem, 3.6vw, 2.8rem);
+        font-weight: 900;
+        line-height: 1.3;
+      }
+
+      .cta-head p {
+        margin: 0;
+        font-size: 1.2rem;
+        font-weight: 700;
+        opacity: 0.95;
+      }
+
+      .cta-line-card {
+        background: white;
         border-radius: 32px;
-        padding: clamp(28px, 5vw, 64px);
-        color: white;
-        box-shadow: 0 26px 52px rgba(30,110,242,0.28);
+        padding: 40px 30px;
+        max-width: 600px;
+        margin: 0 auto;
+        color: var(--text);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.2);
       }
 
-      .cta-panel h2 {
+      .cta-line-card h3 {
         margin: 0 0 12px;
-        font-size: clamp(2rem, 4vw, 3rem);
-        letter-spacing: -0.05em;
+        font-size: 1.5rem;
+        font-weight: 900;
+        color: #3d1e03;
       }
 
-      .cta-panel p {
+      .cta-line-card p {
         margin: 0 0 24px;
-        font-size: 1.06rem;
-        opacity: 0.9;
-      }
-
-      .cta-actions {
-        display: flex; gap: 16px; flex-wrap: wrap;
-      }
-
-      .cta .btn.secondary {
-        background: rgba(255,255,255,0.1);
-        border: 1px solid rgba(255,255,255,0.24);
-        color: white;
+        font-size: 1.05rem;
+        color: var(--muted);
+        font-weight: 700;
       }
 
       footer {
-        padding: 24px 0 56px;
+        padding: 36px 0 60px;
         color: var(--muted);
         text-align: center;
-        font-size: 0.92rem;
+        font-size: 0.95rem;
+        font-weight: 700;
+        border-top: 2px solid var(--line);
       }
 
       @media (max-width: 980px) {
-        .hero-grid, .grid-3, .system-list, .stats { grid-template-columns: 1fr; }
+        .hero-grid, .grid-3, .problem-flex, .benefit-box { grid-template-columns: 1fr; text-align: center; }
         .nav { display: none; }
-        .hero { padding-top: 72px; }
+        .hero { padding-top: 30px; }
+        .problem-card { text-align: left; }
+        .compare-table th, .compare-table td { font-size: 0.9rem; padding: 12px 8px; }
+        .hero-img-badge { position: relative; bottom: 0; left: 0; margin-top: 12px; }
+        .benefit-content h3 { justify-content: center; }
       }
     </style>
   </head>
   <body>
+    <!-- ヘッダー -->
     <header class="topbar">
       <div class="container topbar-inner">
         <div class="brand">
-          <div class="brand-mark">K</div>
-          <span>Kitaasai DX</span>
+          <div class="brand-mark">🏠</div>
+          <span>町内会DX</span>
         </div>
         <nav class="nav">
-          <a href="#overview">概要</a>
-          <a href="#systems">システム</a>
-          <a href="#flow">運用フロー</a>
-          <a href="#architecture">構成</a>
-          <a href="#contact" class="nav-cta">お問い合わせ</a>
+          <a href="#problem">よくあるお悩み</a>
+          <a href="#solution">できること</a>
+          <a href="#benefits">わくわくポイント</a>
+          <a href="https://lin.ee/UWX833ru" target="_blank" class="nav-cta">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M24 10.304c0-5.369-5.383-9.738-12-9.738-6.616 0-12 4.369-12 9.738 0 4.814 4.269 8.846 10.036 9.608.391.084.922.258 1.057.592.122.303.079.778.039 1.085l-.171 1.027c-.053.303-.242 1.186 1.039.647 1.281-.54 6.911-4.069 9.428-6.967 1.739-1.907 2.572-3.844 2.572-6.002z"/></svg>
+            LINEで質問してみる
+          </a>
         </nav>
       </div>
     </header>
 
     <main>
+      <!-- ファーストビュー（FV） -->
       <section class="hero">
         <div class="container hero-grid">
           <div>
-            <div class="eyebrow">LINE × GAS × Spreadsheet</div>
-            <h1>コミュニティ運営を<br />LINE中心で一元化</h1>
+            <div class="eyebrow">✨ 役員さんも住民さんも笑顔になれる！</div>
+            <h1>
+              めんどくさい紙の手間が<br />
+              スマホで<span class="highlight">「ゼロ」</span>になる！<br />
+              未来のたのしい町内会づくり
+            </h1>
             <p class="lead">
-              本ワークスペースには、名簿登録・資料配布・出欠管理・予約管理・安否確認までを一つの運用基盤としてまとめた、LIFF + GAS + Spreadsheet のシステム群が組み込まれています。
+              難しいシステムは一切不要！<br />
+              住民のみなさんは、いつもの「LINE」をポチポチ押すだけ！<br />
+              役員さんの集計作業は、自動でらくらく完了します♪
             </p>
-            <div class="hero-actions">
-              <a href="#overview" class="btn primary">システムを見る</a>
-              <a href="#architecture" class="btn secondary">構成を見る</a>
+            <div>
+              <a href="https://lin.ee/UWX833ru" target="_blank" class="btn-line">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M24 10.304c0-5.369-5.383-9.738-12-9.738-6.616 0-12 4.369-12 9.738 0 4.814 4.269 8.846 10.036 9.608.391.084.922.258 1.057.592.122.303.079.778.039 1.085l-.171 1.027c-.053.303-.242 1.186 1.039.647 1.281-.54 6.911-4.069 9.428-6.967 1.739-1.907 2.572-3.844 2.572-6.002z"/></svg>
+                公式LINEで友だち追加・相談する
+              </a>
             </div>
             <div class="hero-badges">
-              <span class="badge">LIFF</span>
-              <span class="badge">Google Apps Script</span>
-              <span class="badge">Spreadsheet</span>
-              <span class="badge">LINE連携</span>
+              <span class="badge">👍 スマホでかんたん</span>
+              <span class="badge">🧡 LINEで届く・答える</span>
+              <span class="badge">✨ 役員の負担を劇的カット</span>
             </div>
           </div>
 
-          <div class="showcase">
-            <div class="diagram-box">
-              <h3>システム全体像</h3>
-              <div class="stack">
-                <div class="stack-item">
-                  <div class="stack-icon blue">LIFF</div>
-                  <div>
-                    <strong>ユーザー向け画面</strong><br />
-                    <small>LINEアプリ内で起動</small>
-                  </div>
-                </div>
-                <div class="stack-item">
-                  <div class="stack-icon green">GAS</div>
-                  <div>
-                    <strong>バックエンド API</strong><br />
-                    <small>Google Apps Script が受付・処理</small>
-                  </div>
-                </div>
-                <div class="stack-item">
-                  <div class="stack-icon orange">DB</div>
-                  <div>
-                    <strong>スプレッドシート</strong><br />
-                    <small>名簿・予約・回答・アクセスログ</small>
-                  </div>
-                </div>
-                <div class="stack-item">
-                  <div class="stack-icon purple">Ops</div>
-                  <div>
-                    <strong>運用管理</strong><br />
-                    <small>追記・更新・通知・確認</small>
-                  </div>
-                </div>
-              </div>
+          <div class="hero-img-box">
+            <img src="https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?auto=format&fit=crop&w=800&q=80" alt="笑顔で会話する地域のみなさん" />
+            <div class="hero-img-badge">
+              🌈 住民のLINE利用率もアップ！
             </div>
           </div>
         </div>
       </section>
 
-      <section id="overview">
+      <!-- お悩み・共感セクション -->
+      <section id="problem" class="problem-section">
         <div class="container">
           <div class="section-head">
-            <h2>本ワークスペースに含まれるシステム</h2>
+            <h2>町内会や自治会の準備、<br />こんなことで大変な思いをしていませんか？</h2>
+            <p>紙と電話に頼る運用は、もうそろそろ卒業しましょう！</p>
+          </div>
+
+          <div class="problem-flex">
+            <div class="problem-grid">
+              <div class="problem-card">
+                <div class="emo">😭</div>
+                <p>回覧板を回すのが大変…途中で止まってしまったり、全員に届いているか分からない</p>
+              </div>
+              <div class="problem-card">
+                <div class="emo">🌀</div>
+                <p>お祭りや集会の出欠表を集めて、1つずつ手作業で数えるのが本当に面倒…</p>
+              </div>
+              <div class="problem-card">
+                <p class="emo">🏢</p>
+                <p>集会所の予約や鍵の貸し借りが、電話や紙の台帳で二重予約が心配…</p>
+              </div>
+              <div class="problem-card">
+                <p class="emo">💦</p>
+                <p>役員の引き継ぎが大変で「次の役員を引き受けてくれる人がいない」のが一番の悩み…</p>
+              </div>
+            </div>
+            <div>
+              <img src="https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&w=800&q=80" alt="書類整理で頭を抱えるイメージ" />
+            </div>
+          </div>
+
+          <div class="problem-summary">
             <p>
-              住民名簿管理から、資料配布、予約管理、部門別出欠、安否確認までを一貫して扱える構成です。
+              🌟 そのお悩み、すべて『町内会DX』におまかせください！<br />
+              みんなが使っているLINEを活用して、一気に解決します！
             </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 解決策・機能紹介 -->
+      <section id="solution">
+        <div class="container">
+          <div class="section-head">
+            <h2>スマホをポンポン押すだけ！<br />『町内会DX』でできる6つのワクワク</h2>
+            <p>難しい操作は一切ナシ！機械が苦手な方でも安心して使えます。</p>
           </div>
 
           <div class="grid-3">
             <article class="card">
-              <span class="mini-tag">01</span>
-              <h3>プロフィール登録</h3>
-              <p>LINEユーザーIDを利用し、住民の連絡先・希望方法・所属情報を登録し、更新まで一括管理できます。</p>
+              <div class="card-img-wrapper">
+                <img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=600&q=80" alt="スマホ操作" />
+              </div>
+              <div class="card-body">
+                <h3>📇 かんたん名簿登録</h3>
+                <p>自分のLINEからサクッと登録！住所変更や連絡先の更新も、スマホでいつでも自分でできます。</p>
+              </div>
             </article>
+
             <article class="card">
-              <span class="mini-tag">02</span>
-              <h3>お知らせ配信</h3>
-              <p>月次お知らせや案内の配信ページと連動し、必要な情報を自動的に届ける仕組みを備えています。</p>
+              <div class="card-img-wrapper">
+                <img src="https://images.unsplash.com/photo-1577563908411-5077b6dc7624?auto=format&fit=crop&w=600&q=80" alt="笑顔でLINEを見る女性" />
+              </div>
+              <div class="card-body">
+                <h3>📢 スマホで届く回覧板</h3>
+                <p>お知らせやおたよりがLINEに自動で届きます。紙を刷ってポストに入れる手間が一切なくなります！</p>
+              </div>
             </article>
+
             <article class="card">
-              <span class="mini-tag">03</span>
-              <h3>出欠管理</h3>
-              <p>参加可否の回答を記録し、各イベントの参加者状況をスプレッドシート上で把握できます。</p>
+              <div class="card-img-wrapper">
+                <img src="https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=600&q=80" alt="地域の集まり・イベント" />
+              </div>
+              <div class="card-body">
+                <h3>⭕ ワンタップ出欠確認</h3>
+                <p>「行く」「行かない」を選ぶだけ！誰が参加するか画面上で自動でまとまるので、集計の苦労ゼロ！</p>
+              </div>
             </article>
+
             <article class="card">
-              <span class="mini-tag">04</span>
-              <h3>会場予約</h3>
-              <p>施設や部屋の利用予約を管理し、申込・承認・通知の流れをLINEと連携させて運用できます。</p>
+              <div class="card-img-wrapper">
+                <img src="https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=600&q=80" alt="きれいな集会所・会議室" />
+              </div>
+              <div class="card-body">
+                <h3>🔑 集会所のサクサク予約</h3>
+                <p>スマホから「使いたい日」を選んで送信！カレンダーを見ながら空き状況がひと目でわかります。</p>
+              </div>
             </article>
+
             <article class="card">
-              <span class="mini-tag">05</span>
-              <h3>安否確認</h3>
-              <p>状況を段階的に回答させ、未登録ユーザーは自動で登録へ誘導し、回答とログを残します。</p>
+              <div class="card-img-wrapper">
+                <img src="https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?auto=format&fit=crop&w=600&q=80" alt="手を取り合う地域の支え合い" />
+              </div>
+              <div class="card-body">
+                <h3>⛑️ いざという時の安否確認</h3>
+                <p>地震や災害が起きた時も、LINEで「無事です！」を一斉送信。みんなの安全がすぐ確認できて安心です。</p>
+              </div>
             </article>
+
             <article class="card">
-              <span class="mini-tag">06</span>
-              <h3>運用基盤</h3>
-              <p>共通のLIFF設定、共通GAS構成、スプレッドシート連携で、各機能を統一運用基盤として扱えます。</p>
+              <div class="card-img-wrapper">
+                <img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=600&q=80" alt="和やかに会話する役員チーム" />
+              </div>
+              <div class="card-body">
+                <h3>🎁 引き継ぎも超らくらく</h3>
+                <p>データはGoogleの安全な表（スプレッドシート）に残るので、次の役員さんにボタン1つで交代できます！</p>
+              </div>
             </article>
           </div>
         </div>
       </section>
 
-      <section id="systems">
+      <!-- ワクワクポイント・メリット -->
+      <section id="benefits" class="benefits-section">
         <div class="container">
           <div class="section-head">
-            <h2>主要機能一覧</h2>
-            <p>各機能は個別のLIFF画面とGAS機能を持ち、共通基盤の上で連携しています。</p>
+            <h2>みんながハッピーになれる<br />『町内会DX』3つの良いところ</h2>
+            <p>地域のつながりが、もっとあたたかく、もっと新しくなります！</p>
           </div>
 
-          <div class="system-list">
-            <div class="system-item">
-              <div class="icon">👤</div>
-              <div>
-                <h4>プロフィール・名簿登録</h4>
-                <p>LINEユーザー情報と希望条件の登録、更新、重複防止を行うシステムです。</p>
-              </div>
+          <div class="benefit-box">
+            <div class="benefit-img">
+              <img src="https://images.unsplash.com/photo-1581579438747-1dc8d17bbce4?auto=format&fit=crop&w=600&q=80" alt="シニア層も笑顔でスマホを使う" />
             </div>
+            <div class="benefit-content">
+              <h3><span class="benefit-badge-mini">POINT 1</span> 高齢者の方でも安心！新しいアプリは不要</h3>
+              <p>家族や友人との連絡で普段から使い慣れている「LINE」をそのまま使うので、説明会をしなくても誰でも迷わず操作できます。</p>
+            </div>
+          </div>
 
-            <div class="system-item">
-              <div class="icon">📣</div>
-              <div>
-                <h4>お知らせ</h4>
-                <p>月次の告知や会報を展開し、LINEアプリから直感的に見ることができます。</p>
-              </div>
+          <div class="benefit-box">
+            <div class="benefit-img">
+              <img src="https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=600&q=80" alt="電卓とノートで予算に優しい" />
             </div>
+            <div class="benefit-content">
+              <h3><span class="benefit-badge-mini">POINT 2</span> 無駄なお金がかからない！ずっとやさしい設計</h3>
+              <p>Googleの便利な無料仕組みを活用して組み合わせているため、莫大なシステム開発費や維持費は不要！地域に優しいお値段で始められます。</p>
+            </div>
+          </div>
 
-            <div class="system-item">
-              <div class="icon">✅</div>
-              <div>
-                <h4>出欠管理</h4>
-                <p>イベントへの参加可否や状況を記録し、管理者が把握できる日程情報を保持します。</p>
-              </div>
+          <div class="benefit-box">
+            <div class="benefit-img">
+              <img src="https://images.unsplash.com/photo-1531497865144-0464ef8fb9a9?auto=format&fit=crop&w=600&q=80" alt="笑顔で感謝しあう町内会役員" />
             </div>
+            <div class="benefit-content">
+              <h3><span class="benefit-badge-mini">POINT 3</span> 役員さんのなり手不足が解消！引き継ぎスムーズ</h3>
+              <p>「役員は大変だからやりたくない…」というイメージがガラリと変わります。面倒な事務作業時間が半分以下になり、みんなが喜んで協力できます。</p>
+            </div>
+          </div>
 
-            <div class="system-item">
-              <div class="icon">🏢</div>
-              <div>
-                <h4>施設予約</h4>
-                <p>利用日と部屋、利用目的を簡単に申請し、管理側で承認と通知を行う仕組みです。</p>
-              </div>
-            </div>
-
-            <div class="system-item">
-              <div class="icon">🚨</div>
-              <div>
-                <h4>安否確認</h4>
-                <p>安否状態を一括で確認し、必要に応じて救助対応や連絡体制に繋げる運用です。</p>
-              </div>
-            </div>
-
-            <div class="system-item">
-              <div class="icon">🧩</div>
-              <div>
-                <h4>共通基盤</h4>
-                <p>LIFF設定、共通URL、Web App、Spreadsheetの設計を統一し、複数機能を同じ運用原則で管理します。</p>
-              </div>
-            </div>
+          <!-- 比較表 -->
+          <div class="compare-box">
+            <h3>今までのやり方 vs これからの『町内会DX』</h3>
+            <table class="compare-table">
+              <thead>
+                <tr>
+                  <th>やること</th>
+                  <th>今までのやり方（紙・電話）</th>
+                  <th>これからの『町内会DX』</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>お知らせ・回覧</td>
+                  <td>紙を印刷して一軒ずつ配る</td>
+                  <td><strong>LINEで一斉送信！即届く</strong></td>
+                </tr>
+                <tr>
+                  <td>出欠・アンケート</td>
+                  <td>回収して夜遅くまで集計</td>
+                  <td><strong>スマホで回答。勝手に自動集計</strong></td>
+                </tr>
+                <tr>
+                  <td>もしもの安否確認</td>
+                  <td>連絡網で1件ずつ電話</td>
+                  <td><strong>ボタン1つで一斉に安全確認</strong></td>
+                </tr>
+                <tr>
+                  <td>役員の引き継ぎ</td>
+                  <td>段ボールいっぱいの紙資料</td>
+                  <td><strong>スマホとパソコンの画面を渡すだけ</strong></td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </section>
 
-      <section id="flow">
+      <!-- 限定枠 -->
+      <section class="limited-section">
         <div class="container">
-          <div class="section-head">
-            <h2>運用の流れ</h2>
-            <p>LINEでの利用から、GAS処理、Spreadsheet保存までを一つのループとして閉じています。</p>
-          </div>
-
-          <div class="flow">
-            <div class="flow-step">
-              <div class="step-number">1</div>
-              <div>
-                <h4>ユーザーがLINE内でLIFF画面を開く</h4>
-                <p>各アプリに対応するLIFFページが起動し、ユーザー情報とLINE IDを取得します。</p>
-              </div>
-            </div>
-
-            <div class="flow-step">
-              <div class="step-number">2</div>
-              <div>
-                <h4>LIFF画面がGAS Web AppへAPIリクエスト</h4>
-                <p>リクエストには action、sid、line_id などが含まれ、バックエンドが必要な処理を決定します。</p>
-              </div>
-            </div>
-
-            <div class="flow-step">
-              <div class="step-number">3</div>
-              <div>
-                <h4>GASがデータの解決と更新を担当</h4>
-                <p>名簿参照、回答保存、ログ追加、通知判断などをGoogle Apps Scriptがまとめて実行します。</p>
-              </div>
-            </div>
-
-            <div class="flow-step">
-              <div class="step-number">4</div>
-              <div>
-                <h4>Spreadsheetに結果を残す</h4>
-                <p>名簿・回答・アクセス履歴・予約などをシート単位で管理し、後続の分析や運用に使えます。</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="stats">
-            <div class="stat">
-              <strong>5</strong>
-              <span>主要モジュール</span>
-            </div>
-            <div class="stat">
-              <strong>1</strong>
-              <span>共通GAS基盤</span>
-            </div>
-            <div class="stat">
-              <strong>3</strong>
-              <span>主要保存先</span>
-            </div>
-            <div class="stat">
-              <strong>∞</strong>
-              <span>運用拡張性</span>
-            </div>
+          <div class="limited-card">
+            <span class="limited-badge">🌟 毎月 5団体様 限定サポート</span>
+            <h3>新体制への交代のタイミングである「今」がチャンス！</h3>
+            <p>
+              「大変な紙の作業」をそのまま次の役員さんに引き継ぐのは、もう終わりにしませんか？<br />
+              ていねいな導入サポートをお届けするため、毎月【5団体様限定】でLINEご相談をお受けしております。<br />
+              ぜひお早めにお問い合わせください！
+            </p>
           </div>
         </div>
       </section>
 
-      <section id="architecture">
-        <div class="container">
-          <div class="section-head">
-            <h2>構成図</h2>
-            <p>本システムは、ユーザー体験・処理基盤・データ保管・管理運用を分離し、直感的に拡張できる設計です。</p>
-          </div>
-
-          <table class="compare">
-            <thead>
-              <tr>
-                <th>層</th>
-                <th>役割</th>
-                <th>代表技術</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>UI</td>
-                <td>利用者が操作するページ</td>
-                <td>LIFF / HTML / JavaScript</td>
-              </tr>
-              <tr>
-                <td>API</td>
-                <td>処理の受付とルーティング</td>
-                <td>Google Apps Script</td>
-              </tr>
-              <tr>
-                <td>データ</td>
-                <td>名簿・回答・ログの保存</td>
-                <td>Google Spreadsheet</td>
-              </tr>
-              <tr>
-                <td>運用</td>
-                <td>URL発行・メニュー管理・確認</td>
-                <td>Spreadsheet-bound GAS</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section id="contact" class="cta">
+      <!-- CTA・公式LINE案内 -->
+      <section id="contact" class="cta-section">
         <div class="container">
           <div class="cta-panel">
-            <h2>LINE中心の運営基盤として活用できます</h2>
-            <p>
-              本ワークスペースの各システムは、個別に動くだけでなく、共通のLINE運用とGoogle連携を前提に設計されています。<br />
-              住民対応・予約対応・安全対応・連絡配信をまとめて、簡潔に運用できます。
-            </p>
-            <div class="cta-actions">
-              <a href="#overview" class="btn primary">機能一覧を見る</a>
-              <a href="#architecture" class="btn secondary">構成を見る</a>
+            <div class="cta-head">
+              <h2>地域の未来を、もっと明るく便利に！<br />まずはお気軽に公式LINEでご相談ください</h2>
+              <p>
+                「うちの地域でも使えるかしら？」「どんな準備が必要？」など、<br />
+                どんな小さなことでも専門スタッフがやさしくお答えします♪
+              </p>
+            </div>
+
+            <div class="cta-line-card">
+              <h3>💬 公式LINEからかんたん問い合わせ</h3>
+              <p>下のボタンを押して「友だち追加」をするだけで、いつでも気軽に質問できます！</p>
+              <a href="https://lin.ee/UWX833ru" target="_blank" class="btn-line">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M24 10.304c0-5.369-5.383-9.738-12-9.738-6.616 0-12 4.369-12 9.738 0 4.814 4.269 8.846 10.036 9.608.391.084.922.258 1.057.592.122.303.079.778.039 1.085l-.171 1.027c-.053.303-.242 1.186 1.039.647 1.281-.54 6.911-4.069 9.428-6.967 1.739-1.907 2.572-3.844 2.572-6.002z"/></svg>
+                町内会DX 公式LINEを友だち追加する
+              </a>
             </div>
           </div>
         </div>
@@ -753,7 +857,9 @@
     </main>
 
     <footer>
-      © 2026 Kitaasai DX / LIFF + GAS + Spreadsheet System Collection
+      <div class="container">
+        © 2026 町内会DX / スマホでらくらく！新しい地域のカタチ
+      </div>
     </footer>
   </body>
 </html>
