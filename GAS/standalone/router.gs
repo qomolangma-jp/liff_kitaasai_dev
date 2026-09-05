@@ -1,6 +1,7 @@
 function routeRequest(method, e, payload) {
   var startedAt = new Date();
   var action = resolveAction(method, e, payload);
+  var callback = getRequestCallback(e, payload);
 
   try {
     var result;
@@ -10,7 +11,7 @@ function routeRequest(method, e, payload) {
     } else if (method === "POST") {
       result = routePost(action, e, payload || {});
     } else {
-      return errorResponse(action, "Unsupported method", method);
+      return errorResponse(action, "Unsupported method", method, callback);
     }
 
     writeAuditLog({
@@ -31,8 +32,14 @@ function routeRequest(method, e, payload) {
       userId: getUserIdFromRequest(e, payload),
       errorMessage: String(err)
     });
-    return errorResponse(action, "Request failed", String(err));
+    return errorResponse(action, "Request failed", String(err), callback);
   }
+}
+
+function getRequestCallback(e, payload) {
+  var p = (e && e.parameter) ? e.parameter : {};
+  var body = payload || {};
+  return normalizeCallbackName(p.callback || body.callback || '');
 }
 
 function resolveAction(method, e, payload) {
@@ -64,6 +71,7 @@ function resolveAction(method, e, payload) {
 
 function routeGet(action, e) {
   var p = (e && e.parameter) ? e.parameter : {};
+  var callback = getRequestCallback(e, null);
 
   switch (action) {
     case "diagnostics":
@@ -74,46 +82,67 @@ function routeGet(action, e) {
         userId: p.user_id || p.uid || "",
         displayName: p.display_name || "",
         pictureUrl: p.picture_url || ""
-      }));
+      }), callback);
 
     case "bookroom_list":
-      return jsonResponse(handleBookroomList());
+      return jsonResponse(handleBookroomList(), callback);
 
     case "get_monthly_items":
       return okResponse(action, {
         items: handleGetMonthlyItems({ ym: p.ym || "" })
-      });
+      }, callback);
 
     case "attendance_question":
       return jsonResponse(handleAttendanceQuestion({
         userId: p.uid || p.user_id || "",
         qid: p.qid || ""
-      }));
+      }), callback);
 
     case "member_profile_get":
-      return jsonResponse(handleMemberProfileGet({ lineId: p.line_id || "" }));
+      return jsonResponse(handleMemberProfileGet({ lineId: p.line_id || "" }), callback);
 
     case "safety_check":
       return jsonResponse(handleSafetyCheckOpen({
         surveyId: p.sid || "",
         lineId: p.line_id || p.lineId || ""
-      }));
+      }), callback);
+
+    case "safety_check_register":
+      return jsonResponse(handleSafetyCheckRegister({
+        survey_id: p.survey_id || p.sid || "",
+        line_id: p.line_id || p.lineId || "",
+        name: p.name || "",
+        group: p.group || p.group_name || ""
+      }), callback);
+
+    case "safety_check_submit":
+      return jsonResponse(handleSafetyCheckSubmit({
+        survey_id: p.survey_id || p.sid || "",
+        line_id: p.line_id || p.lineId || "",
+        answer_status: p.answer_status || p.answer || "",
+        remarks: p.remarks || "",
+        user_name: p.user_name || "",
+        group_name: p.group_name || "",
+        accessed_at: p.accessed_at || ""
+      }), callback);
 
     default:
-      return errorResponse(action, "Unknown GET action", action);
+      return errorResponse(action, "Unknown GET action", action, callback);
   }
 }
 
 function routePost(action, e, payload) {
+  var callback = getRequestCallback(e, payload);
+
   switch (action) {
     case "diagnostics_write":
-      return jsonResponse(handleDiagnosticsWrite(payload));
+      return jsonResponse(handleDiagnosticsWrite(payload), callback);
 
     case "safety_check_register":
-      return jsonResponse(handleSafetyCheckRegister(payload));
+      return jsonResponse(handleSafetyCheckRegister(payload), callback);
 
     case "safety_check_submit":
-      return jsonResponse(handleSafetyCheckSubmit(payload));
+      return jsonResponse(handleSafetyCheckSubmit(payload), callback);
 
     case "bookroom_submit": {
       recordWebhookDiagnostic("info", "bookroom.route.enter", "Bookroom submit route entered", {
@@ -127,7 +156,7 @@ function routePost(action, e, payload) {
         recordWebhookDiagnostic("warn", "bookroom.route.reject", "Bookroom submit rejected: invalid LIFF token", {
           has_token: !!(payload && payload.liff_token)
         });
-        return errorResponse(action, "Invalid LIFF token", "");
+        return errorResponse(action, "Invalid LIFF token", "", callback);
       }
 
       var submitResult = handleBookroomSubmit(payload);
@@ -136,7 +165,7 @@ function routePost(action, e, payload) {
         message: submitResult && submitResult.message ? String(submitResult.message) : "",
         batch_id: submitResult && submitResult.batch_id ? String(submitResult.batch_id) : ""
       });
-      return jsonResponse(submitResult);
+      return jsonResponse(submitResult, callback);
     }
 
     case "line_webhook": {
@@ -156,7 +185,7 @@ function routePost(action, e, payload) {
         recordWebhookDiagnostic("warn", "route.secret.reject", "Webhook secret mismatch", {
           request_id: requestId
         });
-        return errorResponse(action, "Webhook secret mismatch", "");
+        return errorResponse(action, "Webhook secret mismatch", "", callback);
       }
 
       if (signature) {
@@ -164,14 +193,14 @@ function routePost(action, e, payload) {
           recordWebhookDiagnostic("warn", "route.signature.reject", "Invalid LINE signature", {
             request_id: requestId
           });
-          return errorResponse(action, "Invalid LINE signature", "");
+          return errorResponse(action, "Invalid LINE signature", "", callback);
         }
       } else if (APP_CONFIG.auth.lineSignatureVerifyRequired) {
         recordWebhookDiagnostic("warn", "route.signature.reject", "Invalid LINE signature", {
           request_id: requestId,
           reason: "header_missing"
         });
-        return errorResponse(action, "LINE signature header is missing", "Set LINE_SIGNATURE_VERIFY_REQUIRED=false for GAS fallback");
+        return errorResponse(action, "LINE signature header is missing", "Set LINE_SIGNATURE_VERIFY_REQUIRED=false for GAS fallback", callback);
       } else {
         recordWebhookDiagnostic("warn", "route.signature.skip", "LINE signature header missing, skipped by config", {
           request_id: requestId
@@ -181,23 +210,23 @@ function routePost(action, e, payload) {
       recordWebhookDiagnostic("info", "route.accept", "Webhook checks passed", {
         request_id: requestId
       });
-      return jsonResponse(handleLineWebhook(payload.events || [], { requestId: requestId }));
+      return jsonResponse(handleLineWebhook(payload.events || [], { requestId: requestId }), callback);
     }
 
     case "attendance_answer":
-      return jsonResponse(handleAttendanceAnswer(payload));
+      return jsonResponse(handleAttendanceAnswer(payload), callback);
 
     case "member_profile_upsert":
       if (!verifyLiffToken(payload.liff_token)) {
         return errorResponse(action, "Invalid LIFF token", "");
       }
-      return jsonResponse(handleMemberProfileUpsert(payload));
+      return jsonResponse(handleMemberProfileUpsert(payload), callback);
 
     case "log":
-      return jsonResponse(handleClientLog(payload));
+      return jsonResponse(handleClientLog(payload), callback);
 
     default:
-      return errorResponse(action, "Unknown POST action", action);
+      return errorResponse(action, "Unknown POST action", action, callback);
   }
 }
 
