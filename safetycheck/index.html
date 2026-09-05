@@ -288,6 +288,7 @@
 
     const GAS_API_URL_RAW = PAGE_CONFIG.gasUrl || "";
     const GAS_API_URL = normalizeGasWebAppUrl(GAS_API_URL_RAW);
+    const SAFETYCHECK_GATEWAY_URL = String(PAGE_CONFIG.gatewayUrl || '').trim();
     const LIFF_ID = PAGE_CONFIG.liffId || "2008893549-RZBPRM9X";
     const params = new URLSearchParams(window.location.search);
 
@@ -506,6 +507,47 @@
       throw new Error('GAS への通信に失敗しました。Web App URL または公開設定を確認してください。 / 詳細: ' + (lastError && lastError.message ? lastError.message : '不明なエラー'));
     }
 
+    async function requestGateway(action, payload) {
+      if (!SAFETYCHECK_GATEWAY_URL) {
+        throw new Error('gatewayUrl が未設定です。');
+      }
+
+      const endpoint = SAFETYCHECK_GATEWAY_URL.replace(/\/$/, '') + '/' + action;
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload || {})
+      });
+
+      const text = await response.text();
+      let data = null;
+      if (text) {
+        try {
+          data = JSON.parse(text);
+        } catch (err) {
+          throw new Error('Gateway の応答がJSONではありません。URL: ' + endpoint);
+        }
+      }
+
+      if (!response.ok) {
+        const message = data && data.message ? data.message : ('HTTP ' + response.status);
+        throw new Error('Gateway エラー: ' + message + ' URL: ' + endpoint);
+      }
+
+      return data || {};
+    }
+
+    async function requestSafetyApi(action, payload) {
+      if (SAFETYCHECK_GATEWAY_URL) {
+        return requestGateway(action, payload);
+      }
+
+      const params = Object.assign({ action: action }, payload || {});
+      return requestGasJsonp(params);
+    }
+
     async function init() {
       if (!GAS_API_URL) {
         setStatus('GAS URL が未設定です。Script Properties の SURVEY_BASE_URL を確認してください。', true);
@@ -535,8 +577,7 @@
           state.lineId = profile.userId;
         }
 
-        const data = await requestGasJsonp({
-          action: 'safety_check',
+        const data = await requestSafetyApi('safety_check', {
           sid: surveyId,
           line_id: state.lineId,
           debug: isLocalDebugMode() ? '1' : ''
@@ -582,8 +623,7 @@
 
       setStatus('登録中...');
       try {
-        const result = await requestGasJsonp({
-          action: 'safety_check_register',
+        const result = await requestSafetyApi('safety_check_register', {
           survey_id: surveyId,
           line_id: state.lineId,
           name: name,
@@ -612,8 +652,7 @@
 
       setStatus('送信中...');
       try {
-        const result = await requestGasJsonp({
-          action: 'safety_check_submit',
+        const result = await requestSafetyApi('safety_check_submit', {
           survey_id: surveyId,
           line_id: state.lineId,
           answer_status: selected.value,

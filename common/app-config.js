@@ -21,7 +21,8 @@
     },
     safetycheck: {
       liffId: "2008893549-RZBPRM9X",
-      gasUrl: SHARED_GAS_URL
+      gasUrl: SHARED_GAS_URL,
+      gatewayUrl: ""
     }
   };
 
