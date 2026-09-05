@@ -166,7 +166,22 @@ function handleSafetyCheckOpen(input) {
     detail: JSON.stringify({
       user_name: result.user_name,
       group_name: result.group_name,
-      is_registered: result.is_registered
+      is_registered: result.is_registered,
+      matched_id_column: member && member.matchedIdColumn ? member.matchedIdColumn : '',
+      matched_id_value: member && member.matchedIdValue ? member.matchedIdValue : ''
+    })
+  });
+
+  appendSafetyApiLog({
+    action: 'safety_check_open',
+    method: 'GET',
+    status: result.is_registered ? 'registered' : 'unregistered',
+    latencyMs: 0,
+    userId: lineId,
+    errorMessage: JSON.stringify({
+      survey_id: surveyId,
+      matched_id_column: member && member.matchedIdColumn ? member.matchedIdColumn : '',
+      matched_id_value: member && member.matchedIdValue ? member.matchedIdValue : ''
     })
   });
 
@@ -218,6 +233,8 @@ function handleSafetyCheckRegister(payload) {
   }
 
   ensureColumn('line_id');
+  ensureColumn('user_id');
+  ensureColumn('line_user_id');
   ensureColumn('name_1st');
   ensureColumn('name_2nd');
   ensureColumn('group');
@@ -225,12 +242,13 @@ function handleSafetyCheckRegister(payload) {
   ensureColumn('updated_at');
 
   var targetRow = -1;
-  var idCol = map['line_id'];
+  var idKey = resolveMemberIdColumnKey(map) || 'line_id';
+  var idCol = map[idKey];
   var lastRow = sheet.getLastRow();
   if (idCol !== undefined && lastRow >= 2) {
     var idValues = sheet.getRange(2, idCol + 1, lastRow - 1, 1).getDisplayValues();
     for (var i = 0; i < idValues.length; i++) {
-      if (String(idValues[i][0] || '').trim() === lineId) {
+      if (String(idValues[i][0] || '').trim().toLowerCase() === lineId.toLowerCase()) {
         targetRow = i + 2;
         break;
       }
@@ -242,7 +260,15 @@ function handleSafetyCheckRegister(payload) {
     rowData = sheet.getRange(targetRow, 1, 1, headers.length).getValues()[0];
   }
 
-  rowData[map['line_id']] = lineId;
+  if (map['line_id'] !== undefined) {
+    rowData[map['line_id']] = lineId;
+  }
+  if (map['user_id'] !== undefined) {
+    rowData[map['user_id']] = lineId;
+  }
+  if (map['line_user_id'] !== undefined) {
+    rowData[map['line_user_id']] = lineId;
+  }
   rowData[map['name_1st']] = name;
   rowData[map['name_2nd']] = '';
   rowData[map['group']] = groupName;
@@ -350,7 +376,7 @@ function appendSafetyAccessLog(data) {
 function findMemberByLineId(lineId) {
   var normalizedLineId = String(lineId || '').trim().toLowerCase();
   if (!normalizedLineId) {
-    return { isRegistered: false, fullName: '', group: '' };
+    return { isRegistered: false, fullName: '', group: '', matchedIdColumn: '', matchedIdValue: '' };
   }
 
   var memberSheet = getOrCreateSheet(
@@ -360,41 +386,86 @@ function findMemberByLineId(lineId) {
   );
   var values = memberSheet.getDataRange().getDisplayValues();
   if (values.length <= 1) {
-    return { isRegistered: false, fullName: '', group: '' };
+    return { isRegistered: false, fullName: '', group: '', matchedIdColumn: '', matchedIdValue: '' };
   }
 
   var headers = buildHeaderIndexMap(values[0]);
-  var idCol = headers['line_id'];
+  var idKey = resolveMemberIdColumnKey(headers);
+  var idCol = idKey ? headers[idKey] : undefined;
   var firstCol = headers['name_1st'];
   var secondCol = headers['name_2nd'];
+  var nameCol = headers['name'];
+  var lineNameCol = headers['line_name'];
   var groupCol = headers['group'];
 
   if (idCol === undefined) {
-    return { isRegistered: false, fullName: '', group: '' };
+    return { isRegistered: false, fullName: '', group: '', matchedIdColumn: '', matchedIdValue: '' };
   }
 
   var targetRow = null;
+  var matchedIdValue = '';
   for (var i = 1; i < values.length; i++) {
     var rowLineId = String(values[i][idCol] || '').trim().toLowerCase();
     if (rowLineId && rowLineId === normalizedLineId) {
       targetRow = values[i];
+      matchedIdValue = String(values[i][idCol] || '').trim();
       break;
     }
   }
 
   if (!targetRow) {
-    return { isRegistered: false, fullName: '', group: '' };
+    return { isRegistered: false, fullName: '', group: '', matchedIdColumn: idKey || '', matchedIdValue: '' };
   }
 
   var firstName = firstCol !== undefined ? String(targetRow[firstCol] || '').trim() : '';
   var secondName = secondCol !== undefined ? String(targetRow[secondCol] || '').trim() : '';
+  var combinedName = nameCol !== undefined ? String(targetRow[nameCol] || '').trim() : '';
+  var lineName = lineNameCol !== undefined ? String(targetRow[lineNameCol] || '').trim() : '';
   var group = groupCol !== undefined ? String(targetRow[groupCol] || '').trim() : '';
 
   return {
     isRegistered: true,
-    fullName: (firstName + ' ' + secondName).trim() || firstName || secondName,
-    group: group
+    fullName: (firstName + ' ' + secondName).trim() || combinedName || lineName || firstName || secondName,
+    group: group,
+    matchedIdColumn: idKey || '',
+    matchedIdValue: matchedIdValue
   };
+}
+
+function resolveMemberIdColumnKey(headerMap) {
+  var map = headerMap || {};
+  var candidates = ['line_id', 'user_id', 'line_user_id', 'uid'];
+  for (var i = 0; i < candidates.length; i++) {
+    var key = candidates[i];
+    if (map[key] !== undefined) {
+      return key;
+    }
+  }
+  return '';
+}
+
+function appendSafetyApiLog(record) {
+  try {
+    var r = record || {};
+    var ssId = APP_CONFIG.spreadsheets.notice || APP_CONFIG.spreadsheets.safetyCheck || APP_CONFIG.spreadsheets.member;
+    var sheet = getOrCreateSheet(
+      ssId,
+      APP_CONFIG.sheets.apiAuditLog,
+      ['timestamp', 'action', 'method', 'status', 'latency_ms', 'user_id', 'error_message']
+    );
+
+    sheet.appendRow([
+      new Date(),
+      r.action || '',
+      r.method || '',
+      r.status || '',
+      r.latencyMs || 0,
+      r.userId || '',
+      r.errorMessage || ''
+    ]);
+  } catch (_) {
+    // API diagnostics logging must never block user flow.
+  }
 }
 
 function getSafetyCheckConfig() {
