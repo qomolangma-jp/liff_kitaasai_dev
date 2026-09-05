@@ -235,6 +235,7 @@
 
     const surveyId = resolveSurveyIdFromUrl();
     const lineIdParam = params.get('line_id') || '';
+    const isDebugMode = params.get('debug') === '1' || params.get('pc_debug') === '1';
 
     const registerPanel = document.getElementById('register-panel');
     const surveyPanel = document.getElementById('survey-panel');
@@ -271,7 +272,7 @@
     }
 
     function isLocalDebugMode() {
-      return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || isDebugMode;
     }
 
     function requestGasJsonp(params) {
@@ -354,7 +355,7 @@
         }
 
         if (isLocalDebugMode()) {
-          state.lineId = 'local_debug_user';
+          state.lineId = lineIdParam || 'local_debug_user';
         } else {
           await liff.init({ liffId: LIFF_ID });
           if (!liff.isLoggedIn()) {

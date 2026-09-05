@@ -37,22 +37,39 @@ function issueSafetyCheckUrl(input) {
   }
 
   var issuedUrl = baseUrl + (baseUrl.indexOf('?') === -1 ? '?' : '&') + 'action=safety_check&sid=' + encodeURIComponent(surveyId);
+  var liffUrl = buildSafetyCheckLiffUrl(surveyId);
 
   var sheet = getOrCreateSheet(
     APP_CONFIG.spreadsheets.safetyCheck || APP_CONFIG.spreadsheets.member,
     APP_CONFIG.sheets.safetyCheckSettings,
-    ['survey_id', 'title', 'created_at', 'published_at', 'issued_url', 'status']
+    ['survey_id', 'title', 'created_at', 'published_at', 'issued_url', 'liff_url', 'status']
   );
 
-  sheet.appendRow([surveyId, title, now, now, issuedUrl, 'published']);
+  sheet.appendRow([surveyId, title, now, now, issuedUrl, liffUrl, 'published']);
 
   return {
     status: 'success',
     survey_id: surveyId,
     title: title,
     issued_url: issuedUrl,
+    liff_url: liffUrl,
     created_at: now
   };
+}
+
+function buildSafetyCheckLiffUrl(surveyId) {
+  var liffBase = String(APP_CONFIG.get('LIFF_SAFETY_CHECK_BASE_URL', '') || '').trim();
+
+  if (!liffBase) {
+    liffBase = String(APP_CONFIG.get('LIFF_BASE_URL', '') || '').trim();
+  }
+
+  if (!liffBase) {
+    var appId = String(APP_CONFIG.get('LIFF_SAFETY_CHECK_APP_ID', '2008893549-RZBPRM9X') || '2008893549-RZBPRM9X').trim();
+    liffBase = 'https://liff.line.me/' + appId;
+  }
+
+  return liffBase + (liffBase.indexOf('?') === -1 ? '?' : '&') + 'action=safety_check&sid=' + encodeURIComponent(surveyId);
 }
 
 function handleSafetyCheckOpen(input) {
