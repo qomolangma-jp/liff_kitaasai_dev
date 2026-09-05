@@ -75,22 +75,55 @@ function buildSafetyCheckLiffUrl(surveyId) {
 function handleSafetyCheckOpen(input) {
   var surveyId = String(input && input.surveyId ? input.surveyId : input && input.sid ? input.sid : '').trim();
   var lineId = String(input && input.lineId ? input.lineId : input && input.line_id ? input.line_id : '').trim();
+  var debugMode = String(input && input.debug ? input.debug : '').trim() === '1';
 
   if (!surveyId) {
-    return { status: 'error', message: 'survey_id is required' };
+    return {
+      status: 'error',
+      message: 'survey_id is required',
+      debug: debugMode
+    };
   }
 
+  var sheetId = APP_CONFIG.spreadsheets.safetyCheck || APP_CONFIG.spreadsheets.member;
+  var sheetName = APP_CONFIG.sheets.safetyCheckSettings;
+
   var sheet = getOrCreateSheet(
-    APP_CONFIG.spreadsheets.safetyCheck || APP_CONFIG.spreadsheets.member,
-    APP_CONFIG.sheets.safetyCheckSettings,
+    sheetId,
+    sheetName,
     ['survey_id', 'title', 'created_at', 'published_at', 'issued_url', 'status']
   );
   var values = sheet.getDataRange().getDisplayValues();
+  var headers = values.length > 0 ? buildHeaderIndexMap(values[0]) : {};
+
+  if (debugMode) {
+    var debugInfo = {
+      status: 'debug',
+      debug: true,
+      survey_id: surveyId,
+      line_id: lineId,
+      web_app_url: ScriptApp.getService().getUrl(),
+      spreadsheet_id: sheetId,
+      sheet_name: sheetName,
+      row_count: Math.max(0, values.length - 1),
+      survey_id_column_exists: headers['survey_id'] !== undefined,
+      title_column_exists: headers['title'] !== undefined
+    };
+
+    if (values.length <= 1 || headers['survey_id'] === undefined) {
+      debugInfo.message = 'survey_settings sheet is empty or missing survey_id column';
+      return debugInfo;
+    }
+
+    debugInfo.message = 'debug mode ok';
+    return debugInfo;
+  }
+
   if (values.length <= 1) {
     return { status: 'error', message: 'survey not found' };
   }
 
-  var headers = buildHeaderIndexMap(values[0]);
+  headers = buildHeaderIndexMap(values[0]);
   var idCol = headers['survey_id'];
   var titleCol = headers['title'];
   var row = null;
@@ -129,6 +162,14 @@ function handleSafetyCheckOpen(input) {
   });
 
   return result;
+}
+
+function handleSafetyCheckDebug(input) {
+  return handleSafetyCheckOpen({
+    surveyId: input && input.surveyId ? input.surveyId : '',
+    lineId: input && input.lineId ? input.lineId : '',
+    debug: '1'
+  });
 }
 
 function handleSafetyCheckRegister(payload) {

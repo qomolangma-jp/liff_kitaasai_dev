@@ -24,14 +24,18 @@ function routeRequest(method, e, payload) {
 
     return result;
   } catch (err) {
-    writeAuditLog({
-      action: action,
-      method: method,
-      status: "error",
-      latencyMs: new Date().getTime() - startedAt.getTime(),
-      userId: getUserIdFromRequest(e, payload),
-      errorMessage: String(err)
-    });
+    try {
+      writeAuditLog({
+        action: action,
+        method: method,
+        status: "error",
+        latencyMs: new Date().getTime() - startedAt.getTime(),
+        userId: getUserIdFromRequest(e, payload),
+        errorMessage: String(err)
+      });
+    } catch (logErr) {
+      // Never let diagnostics logging hide the original error.
+    }
     return errorResponse(action, "Request failed", String(err), callback);
   }
 }
@@ -104,7 +108,15 @@ function routeGet(action, e) {
     case "safety_check":
       return jsonResponse(handleSafetyCheckOpen({
         surveyId: p.sid || "",
-        lineId: p.line_id || p.lineId || ""
+        lineId: p.line_id || p.lineId || "",
+        debug: p.debug || p.pc_debug || ""
+      }), callback);
+
+    case "safety_check_debug":
+      return jsonResponse(handleSafetyCheckDebug({
+        surveyId: p.sid || "",
+        lineId: p.line_id || p.lineId || "",
+        debug: p.debug || p.pc_debug || ""
       }), callback);
 
     case "safety_check_register":

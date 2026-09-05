@@ -498,7 +498,8 @@
         const data = await requestGasJsonp({
           action: 'safety_check',
           sid: surveyId,
-          line_id: state.lineId
+          line_id: state.lineId,
+          debug: isLocalDebugMode() ? '1' : ''
         });
 
         if (!data || data.status === 'error') {
