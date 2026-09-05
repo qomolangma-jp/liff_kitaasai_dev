@@ -128,6 +128,22 @@
     .inline-row > div {
       flex: 1;
     }
+    .debug-banner {
+      margin: 14px 0 0;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid #bfdbfe;
+      background: #eff6ff;
+      color: #1d4ed8;
+      font-size: 12px;
+      line-height: 1.6;
+      display: none;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .debug-banner.visible {
+      display: block;
+    }
   </style>
 </head>
 <body>
@@ -201,6 +217,7 @@
         </div>
       </div>
 
+      <div id="debug-banner" class="debug-banner"></div>
       <div id="status" class="status"></div>
     </div>
   </div>
@@ -240,6 +257,7 @@
     const registerPanel = document.getElementById('register-panel');
     const surveyPanel = document.getElementById('survey-panel');
     const completedPanel = document.getElementById('completed-panel');
+    const debugBanner = document.getElementById('debug-banner');
     const statusEl = document.getElementById('status');
     const surveyTitle = document.getElementById('survey-title');
 
@@ -258,6 +276,24 @@
       registerPanel.style.display = name === 'register' ? 'block' : 'none';
       surveyPanel.style.display = name === 'survey' ? 'block' : 'none';
       completedPanel.style.display = name === 'completed' ? 'block' : 'none';
+    }
+
+    function renderDebugBanner() {
+      if (!debugBanner || !isLocalDebugMode()) {
+        return;
+      }
+
+      const currentUrl = window.location.href;
+      const lines = [
+        'PC検証モード',
+        'sid: ' + (surveyId || '(未設定)'),
+        'line_id: ' + (lineIdParam || '(未設定)'),
+        'URL: ' + currentUrl,
+        '使い方: ?sid=...&debug=1&line_id=pc001 の形式で開いてください。'
+      ];
+
+      debugBanner.textContent = lines.join('\n');
+      debugBanner.classList.add('visible');
     }
 
     function formatErrorDetail(err) {
@@ -466,6 +502,7 @@
       }
     });
 
+    renderDebugBanner();
     init();
   </script>
 </body>
