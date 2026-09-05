@@ -144,6 +144,49 @@
     .debug-banner.visible {
       display: block;
     }
+    .debug-panel {
+      margin-top: 14px;
+      padding: 14px;
+      border-radius: 16px;
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      display: none;
+    }
+    .debug-panel.visible {
+      display: block;
+    }
+    .debug-panel__title {
+      margin: 0 0 8px;
+      color: #0f172a;
+      font-size: 14px;
+      font-weight: 800;
+    }
+    .debug-panel__text {
+      margin: 0 0 12px;
+      color: #475569;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .debug-panel__actions {
+      display: flex;
+      gap: 8px;
+      align-items: stretch;
+    }
+    .debug-panel__actions input {
+      flex: 1;
+      margin-top: 0;
+      font-size: 14px;
+      padding: 11px 12px;
+    }
+    .debug-panel__actions button {
+      width: auto;
+      min-width: 108px;
+      margin-top: 0;
+      padding: 11px 12px;
+      border-radius: 12px;
+      font-size: 13px;
+      box-shadow: none;
+    }
   </style>
 </head>
 <body>
@@ -218,6 +261,14 @@
       </div>
 
       <div id="debug-banner" class="debug-banner"></div>
+      <div id="debug-panel" class="debug-panel">
+        <div class="debug-panel__title">PC検証モード</div>
+        <div class="debug-panel__text">ここに安否確認の sid を入れてください。入力後に検証用 URL へ切り替えます。</div>
+        <div class="debug-panel__actions">
+          <input id="debug-sid-input" type="text" placeholder="sc_20260905_172605_157ca7" />
+          <button id="debug-start-btn" type="button">開始</button>
+        </div>
+      </div>
       <div id="status" class="status"></div>
     </div>
   </div>
@@ -258,6 +309,9 @@
     const surveyPanel = document.getElementById('survey-panel');
     const completedPanel = document.getElementById('completed-panel');
     const debugBanner = document.getElementById('debug-banner');
+    const debugPanel = document.getElementById('debug-panel');
+    const debugSidInput = document.getElementById('debug-sid-input');
+    const debugStartBtn = document.getElementById('debug-start-btn');
     const statusEl = document.getElementById('status');
     const surveyTitle = document.getElementById('survey-title');
 
@@ -296,6 +350,40 @@
       debugBanner.classList.add('visible');
     }
 
+    function renderDebugPanel() {
+      if (!debugPanel) {
+        return;
+      }
+
+      if (!isLocalDebugMode()) {
+        debugPanel.classList.remove('visible');
+        return;
+      }
+
+      debugPanel.classList.add('visible');
+      if (debugSidInput && !surveyId) {
+        debugSidInput.focus();
+      }
+    }
+
+    function openDebugSurvey() {
+      const inputSid = debugSidInput ? debugSidInput.value.trim() : '';
+      if (!inputSid) {
+        setStatus('sid を入力してください。', true);
+        return;
+      }
+
+      const nextParams = new URLSearchParams(window.location.search);
+      nextParams.set('sid', inputSid);
+      nextParams.set('debug', '1');
+      if (lineIdParam) {
+        nextParams.set('line_id', lineIdParam);
+      } else {
+        nextParams.set('line_id', 'pc001');
+      }
+      window.location.search = nextParams.toString();
+    }
+
     function formatErrorDetail(err) {
       if (!err) return '不明なエラー';
       if (typeof err === 'string') return err;
@@ -309,6 +397,10 @@
 
     function isLocalDebugMode() {
       return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || isDebugMode;
+    }
+
+    if (debugStartBtn) {
+      debugStartBtn.addEventListener('click', openDebugSurvey);
     }
 
     function requestGasJsonp(params) {
@@ -381,6 +473,7 @@
       }
 
       if (!surveyId) {
+        renderDebugPanel();
         setStatus('URL に sid が含まれていません。生成済みの安否確認 URL を開いてください。', true);
         return;
       }
@@ -503,6 +596,7 @@
     });
 
     renderDebugBanner();
+    renderDebugPanel();
     init();
   </script>
 </body>
