@@ -237,23 +237,39 @@
       completedPanel.style.display = name === 'completed' ? 'block' : 'none';
     }
 
+    function isLocalDebugMode() {
+      return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    }
+
     async function init() {
       if (!GAS_API_URL) {
-        setStatus('GAS URL が未設定です。', true);
+        setStatus('GAS URL が未設定です。Script Properties の SURVEY_BASE_URL を確認してください。', true);
+        return;
+      }
+
+      if (!surveyId) {
+        setStatus('URL に sid が含まれていません。生成済みの安否確認 URL を開いてください。', true);
         return;
       }
 
       try {
-        await liff.init({ liffId: LIFF_ID });
-        if (!liff.isLoggedIn()) {
-          liff.login();
-          return;
+        if (!window.liff) {
+          throw new Error('LIFF SDK が読み込まれていません。LINE で開いてください。');
         }
 
-        const profile = await liff.getProfile();
-        state.lineId = profile.userId;
+        if (isLocalDebugMode()) {
+          state.lineId = 'local_debug_user';
+        } else {
+          await liff.init({ liffId: LIFF_ID });
+          if (!liff.isLoggedIn()) {
+            liff.login();
+            return;
+          }
+          const profile = await liff.getProfile();
+          state.lineId = profile.userId;
+        }
 
-        const res = await fetch(`${GAS_API_URL}?action=safety_check&sid=${encodeURIComponent(surveyId)}&line_id=${encodeURIComponent(profile.userId)}`);
+        const res = await fetch(`${GAS_API_URL}?action=safety_check&sid=${encodeURIComponent(surveyId)}&line_id=${encodeURIComponent(state.lineId)}`);
         const data = await res.json();
 
         if (!data || data.status === 'error') {
@@ -263,6 +279,8 @@
 
         surveyTitle.textContent = data.title || '安否確認';
         state.surveyTitle = data.title || '安否確認';
+        state.user_name = data.user_name || '';
+        state.group_name = data.group_name || '';
 
         if (data.is_registered) {
           state.registered = true;
@@ -275,7 +293,11 @@
         }
       } catch (err) {
         console.error(err);
-        setStatus('初期化に失敗しました。' + err.message, true);
+        const message = err && err.message ? err.message : '不明なエラー';
+        const userMessage = isLocalDebugMode()
+          ? 'ローカル環境では LIFF を使えません。LINEアプリ内で開いてください。'
+          : '初期化に失敗しました。LINEアプリ内から開いてください。詳細: ' + message;
+        setStatus(userMessage, true);
       }
     }
 
