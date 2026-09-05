@@ -259,8 +259,53 @@
       completedPanel.style.display = name === 'completed' ? 'block' : 'none';
     }
 
+    function formatErrorDetail(err) {
+      if (!err) return '不明なエラー';
+      if (typeof err === 'string') return err;
+      if (err.message) return err.message;
+      try {
+        return JSON.stringify(err);
+      } catch (e) {
+        return String(err);
+      }
+    }
+
     function isLocalDebugMode() {
       return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    }
+
+    async function fetchJsonWithDiagnostics(url, options) {
+      try {
+        const response = await fetch(url, options);
+        const text = await response.text();
+
+        let payload = null;
+        if (text && text.trim()) {
+          try {
+            payload = JSON.parse(text);
+          } catch (jsonErr) {
+            payload = { raw: text };
+          }
+        }
+
+        if (!response.ok) {
+          const reason = payload && payload.message ? payload.message : payload && payload.raw ? payload.raw : 'HTTP ' + response.status;
+          const detail = 'HTTP ' + response.status + ' ' + (response.statusText || '') + ' / ' + reason;
+          throw new Error(detail);
+        }
+
+        if (!payload) {
+          throw new Error('GAS から空の応答が返りました。Web App URL を確認してください。');
+        }
+
+        return payload;
+      } catch (err) {
+        const detail = formatErrorDetail(err);
+        const reason = detail.indexOf('Failed to fetch') >= 0
+          ? 'GAS への通信に失敗しました。Web App URL が正しいか、LINEアプリ内で開いているか確認してください。'
+          : 'GAS の応答が不正です。Web App URL と Script Properties を確認してください。';
+        throw new Error(reason + ' URL: ' + url + ' / 詳細: ' + detail);
+      }
     }
 
     async function init() {
@@ -291,8 +336,8 @@
           state.lineId = profile.userId;
         }
 
-        const res = await fetch(`${GAS_API_URL}?action=safety_check&sid=${encodeURIComponent(surveyId)}&line_id=${encodeURIComponent(state.lineId)}`);
-        const data = await res.json();
+        const requestUrl = `${GAS_API_URL}?action=safety_check&sid=${encodeURIComponent(surveyId)}&line_id=${encodeURIComponent(state.lineId)}`;
+        const data = await fetchJsonWithDiagnostics(requestUrl, { method: 'GET' });
 
         if (!data || data.status === 'error') {
           setStatus(data && data.message ? data.message : '安否確認の開始に失敗しました。', true);
@@ -314,11 +359,11 @@
           setStatus('まだ登録が未完了です。簡易登録を行ってください。');
         }
       } catch (err) {
-        console.error(err);
+        console.error('safetycheck init failed:', err);
         const message = err && err.message ? err.message : '不明なエラー';
         const userMessage = isLocalDebugMode()
           ? 'ローカル環境では LIFF を使えません。LINEアプリ内で開いてください。'
-          : '初期化に失敗しました。LINEアプリ内から開いてください。詳細: ' + message;
+          : '初期化に失敗しました。LINEアプリ内から開いてください。' + '\n' + message;
         setStatus(userMessage, true);
       }
     }
@@ -334,7 +379,7 @@
 
       setStatus('登録中...');
       try {
-        const response = await fetch(GAS_API_URL, {
+        const result = await fetchJsonWithDiagnostics(GAS_API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -346,7 +391,6 @@
           })
         });
 
-        const result = await response.json();
         if (!result || result.status !== 'success') {
           setStatus((result && result.message) || '登録に失敗しました。', true);
           return;
@@ -355,7 +399,8 @@
         const redirectUrl = '/index.html?from_safety_check=1';
         window.location.href = redirectUrl;
       } catch (err) {
-        setStatus('登録に失敗しました。' + err.message, true);
+        const message = err && err.message ? err.message : '不明なエラー';
+        setStatus('登録に失敗しました。' + message, true);
       }
     });
 
@@ -368,7 +413,7 @@
 
       setStatus('送信中...');
       try {
-        const response = await fetch(GAS_API_URL, {
+        const result = await fetchJsonWithDiagnostics(GAS_API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -383,7 +428,6 @@
           })
         });
 
-        const result = await response.json();
         if (!result || result.status !== 'success') {
           setStatus((result && result.message) || '送信に失敗しました。', true);
           return;
@@ -392,7 +436,8 @@
         showPanel('completed');
         setStatus('安否確認を送信しました。');
       } catch (err) {
-        setStatus('送信に失敗しました。' + err.message, true);
+        const message = err && err.message ? err.message : '不明なエラー';
+        setStatus('送信に失敗しました。' + message, true);
       }
     });
 
