@@ -348,6 +348,11 @@ function appendSafetyAccessLog(data) {
 }
 
 function findMemberByLineId(lineId) {
+  var normalizedLineId = String(lineId || '').trim().toLowerCase();
+  if (!normalizedLineId) {
+    return { isRegistered: false, fullName: '', group: '' };
+  }
+
   var memberSheet = getOrCreateSheet(
     APP_CONFIG.spreadsheets.member,
     APP_CONFIG.sheets.memberMain,
@@ -370,7 +375,8 @@ function findMemberByLineId(lineId) {
 
   var targetRow = null;
   for (var i = 1; i < values.length; i++) {
-    if (String(values[i][idCol] || '').trim() === lineId) {
+    var rowLineId = String(values[i][idCol] || '').trim().toLowerCase();
+    if (rowLineId && rowLineId === normalizedLineId) {
       targetRow = values[i];
       break;
     }
