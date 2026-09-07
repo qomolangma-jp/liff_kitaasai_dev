@@ -96,6 +96,14 @@ function routeGet(action, e) {
         items: handleGetMonthlyItems({ ym: p.ym || "" })
       }, callback);
 
+    case "notice_bootstrap":
+      return okResponse(action, handleNoticeBootstrap({
+        ym: p.ym || "",
+        userId: p.user_id || p.uid || "",
+        displayName: p.display_name || "",
+        pictureUrl: p.picture_url || ""
+      }), callback);
+
     case "attendance_question":
       return jsonResponse(handleAttendanceQuestion({
         userId: p.uid || p.user_id || "",

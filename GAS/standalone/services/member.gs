@@ -64,6 +64,21 @@ function handleMemberCheck(input) {
   };
 }
 
+function handleMemberCheckCached(input) {
+  var uid = String((input && input.userId) || "").trim().toLowerCase();
+  if (!uid) {
+    return handleMemberCheck(input || {});
+  }
+
+  var key = "member_check_v1_" + uid;
+  var cached = cacheGetJson(key);
+  if (cached) return cached;
+
+  var result = handleMemberCheck(input || {});
+  cachePutJson(key, result, 60);
+  return result;
+}
+
 function handleMemberProfileGet(input) {
   var lineId = String(input.lineId || "").trim();
   if (!lineId) {

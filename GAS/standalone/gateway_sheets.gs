@@ -38,3 +38,28 @@ function buildHeaderIndexMap(headers) {
   });
   return map;
 }
+
+function cacheGetJson(cacheKey) {
+  try {
+    if (!cacheKey) return null;
+    var cache = CacheService.getScriptCache();
+    var raw = cache.get(String(cacheKey));
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch (_) {
+    return null;
+  }
+}
+
+function cachePutJson(cacheKey, value, ttlSeconds) {
+  try {
+    if (!cacheKey) return;
+    var cache = CacheService.getScriptCache();
+    var payload = JSON.stringify(value);
+    var ttl = Number(ttlSeconds || 0);
+    if (!ttl || ttl < 1) ttl = 60;
+    cache.put(String(cacheKey), payload, ttl);
+  } catch (_) {
+    // Cache failures must never break main flow.
+  }
+}

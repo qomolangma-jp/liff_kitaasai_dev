@@ -188,6 +188,10 @@
 		}
 		const REGISTER_FORM_URL = PAGE_CONFIG.registerFormUrl || 'https://liff.line.me/2008893549-jeCNKx4Y';
 		const LOCAL_MEMBER_STATUS_KEY = 'kitaasai_notice_local_test_member_status';
+		const MEMBER_CACHE_TTL_MS = 60 * 1000;
+		const MONTHLY_CACHE_TTL_MS = 3 * 60 * 1000;
+		const memberProfileMemoryCache = new Map();
+		const monthlyItemsMemoryCache = new Map();
 
 		const state = {
 			isLocalMode: false,
@@ -306,6 +310,78 @@
 			el.loadingMessage.textContent = message;
 		}
 
+		function getMonthlyCacheKey(ym, userId) {
+			return `kitaasai_notice_monthly_${userId || 'anonymous'}_${ym}`;
+		}
+
+		function getMemberCacheKey(userId) {
+			return `kitaasai_notice_member_${userId || 'anonymous'}`;
+		}
+
+		function readMemberProfileCache(userId) {
+			const key = getMemberCacheKey(userId);
+			const memoryCached = memberProfileMemoryCache.get(key);
+			if (memoryCached && (Date.now() - memoryCached.ts) < MEMBER_CACHE_TTL_MS) {
+				return memoryCached.member;
+			}
+
+			try {
+				const raw = sessionStorage.getItem(key);
+				if (!raw) return null;
+				const parsed = JSON.parse(raw);
+				if (!parsed || !parsed.member || !parsed.ts) return null;
+				if ((Date.now() - parsed.ts) >= MEMBER_CACHE_TTL_MS) return null;
+				memberProfileMemoryCache.set(key, parsed);
+				return parsed.member;
+			} catch (_) {
+				return null;
+			}
+		}
+
+		function writeMemberProfileCache(userId, member) {
+			const key = getMemberCacheKey(userId);
+			const payload = { ts: Date.now(), member };
+			memberProfileMemoryCache.set(key, payload);
+
+			try {
+				sessionStorage.setItem(key, JSON.stringify(payload));
+			} catch (_) {
+				// Storage full or blocked: ignore cache writes.
+			}
+		}
+
+		function readMonthlyItemsCache(ym, userId) {
+			const key = getMonthlyCacheKey(ym, userId);
+			const memoryCached = monthlyItemsMemoryCache.get(key);
+			if (memoryCached && (Date.now() - memoryCached.ts) < MONTHLY_CACHE_TTL_MS) {
+				return memoryCached.items;
+			}
+
+			try {
+				const raw = sessionStorage.getItem(key);
+				if (!raw) return null;
+				const parsed = JSON.parse(raw);
+				if (!parsed || !Array.isArray(parsed.items) || !parsed.ts) return null;
+				if ((Date.now() - parsed.ts) >= MONTHLY_CACHE_TTL_MS) return null;
+				monthlyItemsMemoryCache.set(key, parsed);
+				return parsed.items;
+			} catch (_) {
+				return null;
+			}
+		}
+
+		function writeMonthlyItemsCache(ym, userId, items) {
+			const key = getMonthlyCacheKey(ym, userId);
+			const payload = { ts: Date.now(), items };
+			monthlyItemsMemoryCache.set(key, payload);
+
+			try {
+				sessionStorage.setItem(key, JSON.stringify(payload));
+			} catch (_) {
+				// Storage full or blocked: ignore cache writes.
+			}
+		}
+
 		async function gasGet(params = {}) {
 			const url = new URL(GAS_URL);
 			Object.entries(params).forEach(([k, v]) => {
@@ -422,6 +498,20 @@
 			return [];
 		}
 
+		function normalizeMemberPayload(raw, profile = {}) {
+			const data = raw && raw.data ? raw.data : raw;
+			const normalized = MemberCheck.normalizeMemberCheckResponse(raw);
+			const status = normalized.status || MemberCheck.normalizeMemberStatus(data && data.status);
+
+			return {
+				isRegistered: normalized.isRegistered !== undefined ? normalized.isRegistered : status !== 'not_registered',
+				status,
+				memberName: normalized.fullName || (data && (data.member_name || data.display_name)) || profile.displayName || '町民',
+				group: normalized.group || (data && (data.group || data.group_name)) || '',
+				registerFormUrl: normalized.registerFormUrl || (data && data.register_form_url) || REGISTER_FORM_URL
+			};
+		}
+
 		async function fetchMemberProfile() {
 			if (state.isLocalMode) {
 				const testStatus = getLocalTestStatus();
@@ -450,37 +540,64 @@
 			}
 
 			const profile = state.profile || {};
+			const userId = profile.userId || '';
+			const cached = readMemberProfileCache(userId);
+			if (cached) return cached;
+
 			const raw = await gasGet({
 				action: 'member_check',
+				user_id: userId,
+				display_name: profile.displayName || '',
+				picture_url: profile.pictureUrl || ''
+			});
+			const member = normalizeMemberPayload(raw, profile);
+			writeMemberProfileCache(userId, member);
+			return member;
+		}
+
+		async function fetchNoticeBootstrap(ym) {
+			const profile = state.profile || {};
+			const raw = await gasGet({
+				action: 'notice_bootstrap',
+				ym,
 				user_id: profile.userId || '',
 				display_name: profile.displayName || '',
 				picture_url: profile.pictureUrl || ''
 			});
 
 			const data = raw && raw.data ? raw.data : raw;
-			const normalized = MemberCheck.normalizeMemberCheckResponse(raw);
-			const status = normalized.status || MemberCheck.normalizeMemberStatus(data && data.status);
+			const member = normalizeMemberPayload(data && data.member ? data.member : raw, profile);
+			const rows = extractMonthlyItemRows(data && data.items ? data.items : data);
+			const items = rows
+				.map((item) => toMonthlyItem(item))
+				.filter((item) => item.label || item.url !== '#');
+
+			writeMemberProfileCache(profile.userId || '', member);
+			writeMonthlyItemsCache(ym, profile.userId || '', items);
 
 			return {
-				isRegistered: normalized.isRegistered !== undefined ? normalized.isRegistered : status !== 'not_registered',
-				status,
-				memberName: normalized.fullName || (data && (data.member_name || data.display_name)) || profile.displayName || '町民',
-				group: normalized.group || (data && (data.group || data.group_name)) || '',
-				registerFormUrl: normalized.registerFormUrl || (data && data.register_form_url) || REGISTER_FORM_URL
+				member,
+				items
 			};
 		}
 
 		async function fetchMonthlyItems(ym) {
+			const userId = state.profile?.userId || '';
+			const cached = readMonthlyItemsCache(ym, userId);
+			if (cached) return cached;
+
 			const raw = await gasGet({
 				action: 'get_monthly_items',
 				ym,
-				user_id: state.profile?.userId || ''
+				user_id: userId
 			});
 			const data = raw && raw.data ? raw.data : raw;
 			const rows = extractMonthlyItemRows(data);
 			const normalized = rows
 				.map((item) => toMonthlyItem(item))
 				.filter((item) => item.label || item.url !== '#');
+
+			writeMonthlyItemsCache(ym, userId, normalized);
 
 			if (normalized.length === 0 && state.isLocalMode) {
 				console.warn('月次データが0件でした。返却形式を確認してください。', raw);
@@ -615,6 +732,25 @@
 				renderEmpty(el.archiveList, 'データの取得に失敗しました');
 				showToast('バックナンバー取得に失敗しました', 'error');
 			}
+		}
+
+		function prefetchArchiveSilently() {
+			if (state.archiveLoaded || state.archiveLoading) return;
+			const ym = el.archiveMonthSelect.value || getCurrentYm();
+			const runner = async () => {
+				try {
+					await loadArchiveForMonth(ym, { showInlineLoading: false });
+				} catch (_) {
+					// Silent prefetch should not disturb the UI.
+				}
+			};
+
+			if (typeof window.requestIdleCallback === 'function') {
+				window.requestIdleCallback(() => { runner(); }, { timeout: 1200 });
+				return;
+			}
+
+			setTimeout(() => { runner(); }, 400);
 		}
 
 		function bindCardClickEvents() {
@@ -781,8 +917,32 @@
 					state.profile = profile;
 				}
 
+				const ym = getCurrentYm();
 				setLoadingMessage('住民名簿と照合中...');
-				state.member = await fetchMemberProfile();
+				if (state.isLocalMode) {
+					const currentItemsPromise = fetchMonthlyItems(ym);
+					state.member = await fetchMemberProfile();
+					setLoadingMessage('今月の回覧データを取得中...');
+					state.currentItems = await currentItemsPromise;
+				} else {
+					let bootstrap = null;
+					try {
+						bootstrap = await fetchNoticeBootstrap(ym);
+					} catch (_) {
+						// Fallback to legacy separate calls when unified endpoint is unavailable.
+					}
+
+					if (bootstrap) {
+						state.member = bootstrap.member;
+						state.currentItems = bootstrap.items;
+					} else {
+						const currentItemsPromise = fetchMonthlyItems(ym);
+						state.member = await fetchMemberProfile();
+						setLoadingMessage('今月の回覧データを取得中...');
+						state.currentItems = await currentItemsPromise;
+					}
+				}
+
 				el.userName.textContent = state.member.memberName;
 				el.userAvatar.src = state.profile.pictureUrl || 'https://placehold.jp/96x96.png';
 				el.registerLink.href = state.member.registerFormUrl || REGISTER_FORM_URL;
@@ -797,14 +957,13 @@
 				}
 
 				setLoadingMessage('今月の回覧データを取得中...');
-				const ym = getCurrentYm();
-				state.currentItems = await fetchMonthlyItems(ym);
 				renderCurrentItems(state.currentItems, ym);
 				renderEmpty(el.archiveList, 'バックナンバーを見ると読み込みます');
 				state.archiveLoaded = false;
 
 				switchMainState('app');
 				logAction({ action_type: 'page_view', ym });
+				prefetchArchiveSilently();
 			} catch (error) {
 				console.error(error);
 				switchMainState('app');

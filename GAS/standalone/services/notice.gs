@@ -3,6 +3,12 @@ function handleGetMonthlyItems(input) {
   if (!/^\d{4}-\d{2}$/.test(ym)) {
     ym = Utilities.formatDate(new Date(), "JST", "yyyy-MM");
   }
+  var cacheKey = "notice_monthly_items_v1_" + ym;
+  var cached = cacheGetJson(cacheKey);
+  if (cached && Array.isArray(cached)) {
+    return cached;
+  }
+
   var ymSlash = ym.replace("-", "/");
 
   var sheet = getSheetOrThrow(APP_CONFIG.spreadsheets.notice, APP_CONFIG.sheets.noticeItems);
@@ -33,7 +39,33 @@ function handleGetMonthlyItems(input) {
   }
 
   out.sort(function (a, b) { return a.ymd < b.ymd ? 1 : -1; });
+  cachePutJson(cacheKey, out, 180);
   return out;
+}
+
+function handleNoticeBootstrap(input) {
+  var req = input || {};
+  var ym = String(req.ym || "").trim();
+  if (!/^\d{4}-\d{2}$/.test(ym)) {
+    ym = Utilities.formatDate(new Date(), "JST", "yyyy-MM");
+  }
+
+  var member = handleMemberCheckCached({
+    userId: req.userId || "",
+    displayName: req.displayName || "",
+    pictureUrl: req.pictureUrl || ""
+  });
+
+  var items = [];
+  if (member && member.status !== "not_registered" && member.status !== "suspended") {
+    items = handleGetMonthlyItems({ ym: ym });
+  }
+
+  return {
+    ym: ym,
+    member: member,
+    items: items
+  };
 }
 
 function normalizeDateForNotice(input) {
