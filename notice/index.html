@@ -75,7 +75,7 @@
 		<section id="loading" class="app-screen app-screen--centered">
 			<div class="app-loading">
 				<div class="app-loading__spinner"></div>
-				<p class="text-sm font-semibold text-slate-600">住民名簿と照合中...</p>
+				<p id="loadingMessage" class="text-sm font-semibold text-slate-600">住民名簿と照合中...</p>
 			</div>
 		</section>
 
@@ -195,7 +195,9 @@
 			profile: null,
 			member: null,
 			currentItems: [],
-			archiveItems: []
+			archiveItems: [],
+			archiveLoaded: false,
+			archiveLoading: false
 		};
 
 		const el = {
@@ -204,6 +206,7 @@
 			devPanel: document.getElementById('devPanel'),
 			devBadge: document.getElementById('devBadge'),
 			loading: document.getElementById('loading'),
+			loadingMessage: document.getElementById('loadingMessage'),
 			notRegisteredScreen: document.getElementById('notRegisteredScreen'),
 			suspendedScreen: document.getElementById('suspendedScreen'),
 			app: document.getElementById('app'),
@@ -296,6 +299,11 @@
 				type,
 				duration: 2600
 			});
+		}
+
+		function setLoadingMessage(message) {
+			if (!el.loadingMessage) return;
+			el.loadingMessage.textContent = message;
 		}
 
 		async function gasGet(params = {}) {
@@ -579,6 +587,36 @@
 			el.archiveList.innerHTML = items.map((item) => createItemCard(item, 'archive')).join('');
 		}
 
+		async function loadArchiveForMonth(ym, options = {}) {
+			const { showInlineLoading = true } = options;
+			if (state.archiveLoading) return;
+			state.archiveLoading = true;
+
+			try {
+				if (showInlineLoading) {
+					el.archiveList.innerHTML = '<div class="text-sm text-slate-500 px-1">読み込み中...</div>';
+				}
+				const items = await fetchMonthlyItems(ym);
+				state.archiveItems = items;
+				renderArchiveItems(items, ym);
+				state.archiveLoaded = true;
+				logAction({ action_type: 'page_view', ym });
+			} finally {
+				state.archiveLoading = false;
+			}
+		}
+
+		async function ensureArchiveLoaded() {
+			if (state.archiveLoaded) return;
+			const ym = el.archiveMonthSelect.value || getCurrentYm();
+			try {
+				await loadArchiveForMonth(ym, { showInlineLoading: true });
+			} catch (error) {
+				renderEmpty(el.archiveList, 'データの取得に失敗しました');
+				showToast('バックナンバー取得に失敗しました', 'error');
+			}
+		}
+
 		function bindCardClickEvents() {
 			const root = document.getElementById('app');
 			root.addEventListener('click', (event) => {
@@ -644,13 +682,15 @@
 				state.activeTab = 'current';
 				updateTabs();
 			});
-			el.tabBtnArchive.addEventListener('click', () => {
+			el.tabBtnArchive.addEventListener('click', async () => {
 				state.activeTab = 'archive';
 				updateTabs();
+				await ensureArchiveLoaded();
 			});
-			el.goArchiveBottomBtn.addEventListener('click', () => {
+			el.goArchiveBottomBtn.addEventListener('click', async () => {
 				state.activeTab = 'archive';
 				updateTabs();
+				await ensureArchiveLoaded();
 				el.archiveMonthSelect.scrollIntoView({ behavior: 'smooth', block: 'start' });
 			});
 			updateTabs();
@@ -665,11 +705,7 @@
 			el.archiveMonthSelect.addEventListener('change', async (event) => {
 				const ym = event.target.value;
 				try {
-					el.archiveList.innerHTML = '<div class="text-sm text-slate-500 px-1">読み込み中...</div>';
-					const items = await fetchMonthlyItems(ym);
-					state.archiveItems = items;
-					renderArchiveItems(items, ym);
-					logAction({ action_type: 'page_view', ym });
+					await loadArchiveForMonth(ym, { showInlineLoading: true });
 				} catch (error) {
 					renderEmpty(el.archiveList, 'データの取得に失敗しました');
 					showToast('バックナンバー取得に失敗しました', 'error');
@@ -730,6 +766,7 @@
 			el.registerLink.href = REGISTER_FORM_URL;
 
 			switchMainState('loading');
+			setLoadingMessage('LIFF認証を確認中...');
 
 			try {
 				if (state.isLocalMode) {
@@ -744,6 +781,7 @@
 					state.profile = profile;
 				}
 
+				setLoadingMessage('住民名簿と照合中...');
 				state.member = await fetchMemberProfile();
 				el.userName.textContent = state.member.memberName;
 				el.userAvatar.src = state.profile.pictureUrl || 'https://placehold.jp/96x96.png';
@@ -758,13 +796,12 @@
 					return;
 				}
 
+				setLoadingMessage('今月の回覧データを取得中...');
 				const ym = getCurrentYm();
 				state.currentItems = await fetchMonthlyItems(ym);
 				renderCurrentItems(state.currentItems, ym);
-
-				const archiveYm = el.archiveMonthSelect.value || ym;
-				state.archiveItems = await fetchMonthlyItems(archiveYm);
-				renderArchiveItems(state.archiveItems, archiveYm);
+				renderEmpty(el.archiveList, 'バックナンバーを見ると読み込みます');
+				state.archiveLoaded = false;
 
 				switchMainState('app');
 				logAction({ action_type: 'page_view', ym });
