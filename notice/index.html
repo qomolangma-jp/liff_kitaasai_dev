@@ -160,6 +160,17 @@
 						<div id="archiveList" class="space-y-2"></div>
 					</section>
 				</div>
+
+				<div class="pt-2">
+					<button
+						id="goArchiveBottomBtn"
+						type="button"
+						class="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-700 shadow-sm hover:bg-slate-50"
+					>
+						<i class="fa-solid fa-book-open"></i>
+						<span>バックナンバーを見る</span>
+					</button>
+				</div>
 			</div>
 		</section>
 
@@ -206,6 +217,7 @@
 			archiveMonthSelect: document.getElementById('archiveMonthSelect'),
 			archiveMonthLabel: document.getElementById('archiveMonthLabel'),
 			archiveList: document.getElementById('archiveList'),
+			goArchiveBottomBtn: document.getElementById('goArchiveBottomBtn'),
 			toast: document.getElementById('toast'),
 			toastInner: document.getElementById('toastInner'),
 			registerLink: document.getElementById('registerLink')
@@ -265,6 +277,7 @@
 			const isCurrent = state.activeTab === 'current';
 			el.canvasCurrent.classList.toggle('hidden', !isCurrent);
 			el.canvasArchive.classList.toggle('hidden', isCurrent);
+			el.goArchiveBottomBtn.classList.toggle('hidden', !isCurrent);
 
 			el.tabBtnCurrent.className = isCurrent
 				? 'app-header__tab is-active'
@@ -500,16 +513,29 @@
 		}
 
 		function createItemCard(item, mode = 'default') {
+			const itemCategory = classifyItem(item.type);
+			const typeLabel = itemCategory === 'notice' ? '回覧板' : '配布物';
+			const typeBadgeClass = itemCategory === 'notice'
+				? 'bg-sky-100 text-sky-700 border-sky-200'
+				: 'bg-amber-100 text-amber-700 border-amber-200';
+			const typeBadge = `
+				<span class="inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-bold ${typeBadgeClass}">
+					${typeLabel}
+				</span>
+			`;
 			const memoBlock = item.memo
 				? `<p class="text-xs text-slate-600 mt-2">${escapeHtml(item.memo)}</p>`
 				: '';
-			const buttonLabel = mode === 'archive' ? '開く' : (classifyItem(item.type) === 'notice' ? '確認する' : '配布物を開く');
+			const buttonLabel = mode === 'archive' ? '開く' : (itemCategory === 'notice' ? '確認する' : '配布物を開く');
 
 			return `
 				<article class="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
 					<div class="flex items-start justify-between gap-2">
 						<div class="min-w-0">
-							<p class="text-[11px] text-slate-500">${escapeHtml(item.ymd || '-')}</p>
+							<div class="flex items-center gap-2 flex-wrap">
+								<p class="text-[11px] text-slate-500">${escapeHtml(item.ymd || '-')}</p>
+								${typeBadge}
+							</div>
 							<h4 class="text-sm font-bold text-slate-800 mt-1 break-words">${escapeHtml(item.label)}</h4>
 							${memoBlock}
 						</div>
@@ -621,6 +647,11 @@
 			el.tabBtnArchive.addEventListener('click', () => {
 				state.activeTab = 'archive';
 				updateTabs();
+			});
+			el.goArchiveBottomBtn.addEventListener('click', () => {
+				state.activeTab = 'archive';
+				updateTabs();
+				el.archiveMonthSelect.scrollIntoView({ behavior: 'smooth', block: 'start' });
 			});
 			updateTabs();
 		}
