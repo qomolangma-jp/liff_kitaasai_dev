@@ -36,6 +36,21 @@ function handleLineWebhook(events, options) {
         var memberName = getMemberNameByLineId(userId);
         var lineName = getLineProfileName(userId);
 
+        if (isSafetyCheckMessage(text)) {
+          var safetyCheckResult = handleSafetyCheckLineMessage({
+            eventId: event.webhookEventId || (event.message && event.message.id) || "",
+            userId: userId,
+            userName: memberName,
+            lineName: lineName,
+            message: text,
+            timestamp: ts
+          });
+
+          if (safetyCheckResult && safetyCheckResult.status === "success") {
+            sendSafetyCheckReply(event.replyToken, safetyCheckResult);
+          }
+        }
+
         chatRows.push({
           created_at: Utilities.formatDate(ts, "JST", "yyyy/MM/dd HH:mm:ss"),
           line_id: userId,
@@ -128,6 +143,71 @@ function handleLineWebhook(events, options) {
     failed: failed,
     rows_pending_write: chatRows.length
   };
+}
+
+function isSafetyCheckMessage(text) {
+  return String(text || "").replace(/[\s\u3000]/g, "") === "[安否]確認";
+}
+
+function sendSafetyCheckReply(replyToken, safetyCheckResult) {
+  var token = APP_CONFIG.line && APP_CONFIG.line.channelAccessToken
+    ? String(APP_CONFIG.line.channelAccessToken).trim()
+    : "";
+  var reply = String(replyToken || "").trim();
+
+  if (!reply || !token) {
+    recordWebhookDiagnostic("warn", "safety_check.reply.skip", "Safety check reply skipped: reply token or channel token missing", {
+      has_reply_token: !!reply,
+      has_channel_token: !!token
+    });
+    return;
+  }
+
+  var result = safetyCheckResult || {};
+  var name = String(result.userName || "ご利用者").trim();
+  var message;
+
+  if (result.isRegistered !== true) {
+    var registerUrl = String(result.registerFormUrl || "").trim();
+    message = "安否確認のご連絡を受け付けました。\n\nただし、現在LINEの住民登録が確認できません。\nお名前や班の情報がないため、誰の安否確認か正しく紐付けて保管できません。\n\n次の登録フォームから、お名前と班を登録してください。";
+    if (registerUrl) {
+      message += "\n\n登録フォーム:\n" + registerUrl;
+    }
+  } else {
+    message = name + "さん\n\n安否確認のご連絡を受け付けました。\n送信時刻とLINEアカウントを記録しています。\n\nご無事の場合は、このままで大丈夫です。\nお困りの場合は、町内会役員へ直接ご連絡ください。";
+  }
+
+  try {
+    var response = UrlFetchApp.fetch("https://api.line.me/v2/bot/message/reply", {
+      method: "post",
+      contentType: "application/json; charset=UTF-8",
+      headers: {
+        Authorization: "Bearer " + token
+      },
+      payload: JSON.stringify({
+        replyToken: reply,
+        messages: [{ type: "text", text: message }]
+      }),
+      muteHttpExceptions: true
+    });
+    var code = response.getResponseCode();
+
+    if (code < 200 || code >= 300) {
+      recordWebhookDiagnostic("error", "safety_check.reply.error", "Safety check reply failed", {
+        code: code,
+        body: response.getContentText() || ""
+      });
+      return;
+    }
+
+    recordWebhookDiagnostic("info", "safety_check.reply.success", "Safety check reply sent", {
+      code: code
+    });
+  } catch (err) {
+    recordWebhookDiagnostic("error", "safety_check.reply.exception", "Safety check reply exception", {
+      error: String(err)
+    });
+  }
 }
 
 function getMemberNameByLineId(userId) {

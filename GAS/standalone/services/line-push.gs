@@ -127,7 +127,7 @@ function getTargetUsers() {
     throw new Error("Active spreadsheet is not available.");
   }
 
-  var targetSheetName = APP_CONFIG.get("DIALOG_TARGET_SHEET", APP_CONFIG.sheets.memberMain || "名簿");
+  var targetSheetName = APP_CONFIG.get("DIALOG_TARGET_SHEET", APP_CONFIG.sheets.memberMain || "users");
   var sheet = ss.getSheetByName(targetSheetName);
   if (!sheet) {
     throw new Error("Target sheet not found: " + targetSheetName);

@@ -40,16 +40,29 @@
     `;
   }
 
-  function buildAppHeader({ tabLabels = ['予約を申し込む', '空き状況カレンダー'], activeTab = 1 }) {
+  function buildAppHeader({
+    tabLabels = ['ホーム', '一覧'],
+    activeTab = 0,
+    brandTitle = '小松',
+    brandSub = 'Smart自治PJ',
+    logoPath = '../common/logo_square.jpg'
+  } = {}) {
     return `
       <header class="app-header">
+        <div class="app-header__brand">
+          <img src="${logoPath}" alt="${brandTitle} ${brandSub}" class="app-header__logo" />
+          <div class="app-header__brand-text">
+            <div class="app-header__brand-title">${brandTitle}</div>
+            <div class="app-header__brand-sub">${brandSub}</div>
+          </div>
+        </div>
         <div class="app-header__tabbar">
           <button type="button" class="app-header__tab ${activeTab === 0 ? 'is-active' : ''}" data-tab="0">
-            <i class="fa-solid fa-file-pen"></i>
+            <i class="fa-solid fa-house"></i>
             <span>${tabLabels[0]}</span>
           </button>
           <button type="button" class="app-header__tab ${activeTab === 1 ? 'is-active' : ''}" data-tab="1">
-            <i class="fa-regular fa-calendar-days"></i>
+            <i class="fa-regular fa-list-alt"></i>
             <span>${tabLabels[1]}</span>
           </button>
         </div>

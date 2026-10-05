@@ -11,12 +11,17 @@
         extend: {
           colors: {
             brand: {
-              50: '#f0fdf4',
-              100: '#dcfce7',
-              200: '#bbf7d0',
-              500: '#22c55e',
-              600: '#16a34a',
-              700: '#15803d'
+              50: '#eef9ff',
+              100: '#dff4ff',
+              200: '#c7ebff',
+              500: '#0d8bd8',
+              600: '#0a6eb8',
+              700: '#0a4d8f'
+            },
+            green: {
+              500: '#19b66d',
+              600: '#13a261',
+              700: '#0c8751'
             }
           }
         }
@@ -34,10 +39,17 @@
 <body class="h-full app-page overflow-x-hidden">
   <main class="app-shell app-shell--desktop">
     <header class="app-header">
+      <div class="app-header__brand">
+        <img src="./logo_square.jpg" alt="小松Smart自治PJ" class="app-header__logo" />
+        <div class="app-header__brand-text">
+          <div class="app-header__brand-title">小松</div>
+          <div class="app-header__brand-sub">Smart自治PJ</div>
+        </div>
+      </div>
       <div class="app-header__tabbar">
         <button id="tabMain" type="button" class="app-header__tab is-active" data-tab="main">
           <i class="fa-solid fa-house"></i>
-          <span>メイン</span>
+          <span>ホーム</span>
         </button>
         <button id="tabSub" type="button" class="app-header__tab" data-tab="sub">
           <i class="fa-solid fa-list"></i>
@@ -125,10 +137,10 @@
   </main>
 
   <script>
-    const PAGE_CONFIG = (window.AppConfig && window.AppConfig.getPageConfig('notice')) || {};
-    const LIFF_ID = PAGE_CONFIG.liffId || 'YOUR_LIFF_ID';
-    const REGISTER_FORM_URL = PAGE_CONFIG.registerFormUrl || 'https://example.com/register';
-    const GAS_URL = PAGE_CONFIG.gasUrl || '';
+    const PAGE_CONFIG = (window.AppConfig && window.AppConfig.getRequiredPageConfig('notice')) || {};
+    const LIFF_ID = PAGE_CONFIG.liffId;
+    const REGISTER_FORM_URL = PAGE_CONFIG.registerFormUrl || '';
+    const GAS_URL = PAGE_CONFIG.gasUrl;
     const state = {
       profile: null,
       member: null,

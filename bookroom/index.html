@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DX町内会公民館 予約＆空き状況システム</title>
+  <title>[Dev] 公民館予約・空き状況確認</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="../common/app-shell.css">
@@ -139,26 +139,33 @@
   <div class="app-shell app-shell--desktop">
     <!-- 🎛️ 新デザイン：画面切り替えカプセル型タブ（ヘッダー） -->
     <div class="app-header">
-    <div class="bg-slate-800/80 p-1 rounded-xl flex relative border border-slate-700 shadow-inner">
-      <!-- 予約フォームタブ -->
-      <button 
-        id="tabBtnForm" 
-        onclick="switchCanvas('form')" 
-        class="flex-1 py-2.5 text-xs font-bold rounded-lg transition-all duration-300 flex items-center justify-center space-x-2 text-slate-400 hover:text-slate-200"
-      >
-        <i class="fa-solid fa-file-pen text-sm"></i>
-        <span>予約を申し込む</span>
-      </button>
-      <!-- 空き状況カレンダータブ -->
-      <button 
-        id="tabBtnCalendar" 
-        onclick="switchCanvas('calendar')" 
-        class="flex-1 py-2.5 text-xs font-bold rounded-lg transition-all duration-300 flex items-center justify-center space-x-2 bg-gradient-to-b from-emerald-500 to-emerald-600 text-white shadow-md transform scale-100"
-      >
-        <i class="fa-regular fa-calendar-days text-sm"></i>
-        <span>空き状況カレンダー</span>
-      </button>
-    </div>
+      <div class="app-header__brand">
+        <img src="../common/logo_square.jpg" alt="小松Smart自治PJ" class="app-header__logo" />
+        <div class="app-header__brand-text">
+          <div class="app-header__brand-title">小松</div>
+          <div class="app-header__brand-sub">Smart自治PJ</div>
+        </div>
+      </div>
+      <div class="bg-white/10 p-1 rounded-xl flex relative border border-white/20 shadow-inner backdrop-blur-sm">
+        <!-- 予約フォームタブ -->
+        <button 
+          id="tabBtnForm" 
+          onclick="switchCanvas('form')" 
+          class="flex-1 py-2.5 text-xs font-bold rounded-lg transition-all duration-300 flex items-center justify-center space-x-2 text-white/85 hover:text-white"
+        >
+          <i class="fa-solid fa-file-pen text-sm"></i>
+          <span>予約を申し込む</span>
+        </button>
+        <!-- 空き状況カレンダータブ -->
+        <button 
+          id="tabBtnCalendar" 
+          onclick="switchCanvas('calendar')" 
+          class="flex-1 py-2.5 text-xs font-bold rounded-lg transition-all duration-300 flex items-center justify-center space-x-2 bg-gradient-to-b from-[#0a6eb8] to-[#14b66c] text-white shadow-md transform scale-100"
+        >
+          <i class="fa-regular fa-calendar-days text-sm"></i>
+          <span>空き状況カレンダー</span>
+        </button>
+      </div>
 
     <!-- 🔧 ローカルテスト専用：ステータス切替スイッチ -->
     <div id="devPanel" class="hidden mt-2.5 p-2 bg-slate-950/60 rounded-lg flex items-center justify-between text-[10px] border border-slate-800">
@@ -176,10 +183,10 @@
     <!-- ========================================== -->
     <div id="canvasForm" class="flex flex-col flex-1 overflow-hidden hidden">
       <!-- サブヘッダー -->
-      <div class="bg-gradient-to-r from-brand-600 to-brand-700 text-white px-5 py-3 shadow-sm flex items-center justify-between">
+      <div class="bg-gradient-to-r from-[#0a6eb8] to-[#14b66c] text-white px-5 py-3 shadow-sm flex items-center justify-between">
         <div class="flex items-center space-x-2">
-          <i class="fa-solid fa-hotel text-sm text-brand-100"></i>
-          <h2 class="text-xs font-bold tracking-wider uppercase text-brand-100">DX町内会公民館窓口フォーム</h2>
+          <i class="fa-solid fa-hotel text-sm text-white/80"></i>
+          <h2 class="text-xs font-bold tracking-wider uppercase text-white/90">DX町内会公民館窓口フォーム</h2>
         </div>
         <div id="devBadge" class="hidden bg-amber-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded animate-pulse">
           ローカルモード
@@ -206,7 +213,7 @@
         <a 
           href="https://liff.line.me/2008962357-ePaQmDO9" 
           target="_blank" 
-          class="w-full max-w-[280px] py-4 bg-[#06C755] hover:bg-[#05B34C] text-white font-bold rounded-2xl shadow-lg shadow-emerald-100 flex items-center justify-center space-x-2 transition"
+          class="w-full max-w-[280px] py-4 bg-gradient-to-r from-[#0a6eb8] to-[#14b66c] hover:brightness-105 text-white font-bold rounded-2xl shadow-lg shadow-blue-100 flex items-center justify-center space-x-2 transition"
         >
           <i class="fa-solid fa-id-card"></i>
           <span>町民名簿に登録する (外部)</span>
@@ -466,12 +473,9 @@
     // ----------------------------------------------------
     // 設定
     // ----------------------------------------------------
-    const PAGE_CONFIG = (window.AppConfig && window.AppConfig.getPageConfig("bookroom")) || {};
-    const LIFF_ID = PAGE_CONFIG.liffId || "2008893549-vbVJOMEv";
-    const GAS_URL = PAGE_CONFIG.gasUrl || "";
-    if (!GAS_URL) {
-      throw new Error("AppConfig gasUrl is not configured for bookroom page");
-    }
+    const PAGE_CONFIG = (window.AppConfig && window.AppConfig.getRequiredPageConfig("bookroom")) || {};
+    const LIFF_ID = PAGE_CONFIG.liffId;
+    const GAS_URL = PAGE_CONFIG.gasUrl;
 
     function stringifyInitError(error) {
       if (error === null || error === undefined) return "unknown error";
@@ -487,6 +491,35 @@
     let liffProfile = null;
     let bookedData = []; 
     let memberProfile = null; 
+    const BOOKROOM_RESERVATION_CACHE_TTL_MS = 2 * 60 * 1000;
+
+    function getReservationCacheKey() {
+      return "kitaasai_bookroom_reservations";
+    }
+
+    function readReservationCache() {
+      try {
+        const raw = sessionStorage.getItem(getReservationCacheKey());
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (!parsed || !Array.isArray(parsed.items) || !parsed.ts) return null;
+        if (Date.now() - parsed.ts > BOOKROOM_RESERVATION_CACHE_TTL_MS) return null;
+        return parsed.items;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function writeReservationCache(items) {
+      try {
+        sessionStorage.setItem(getReservationCacheKey(), JSON.stringify({
+          ts: Date.now(),
+          items: Array.isArray(items) ? items : []
+        }));
+      } catch (_) {
+        // Ignore storage failures.
+      }
+    }
 
     // 管理されている時間枠リスト
     const TIME_SLOTS_MASTER = ["午前", "午後", "夜間"];
@@ -600,19 +633,18 @@ async function initApp() {
             document.getElementById("userAvatar").src = liffProfile.pictureUrl;
           }
           
-          // 2. 名簿情報と予約一覧を並列で取得（高速化）
-          const [profileResult, _] = await Promise.all([
-            fetchMemberProfile(liffProfile.userId),
-            fetchReservations()
-          ]);
-          memberProfile = profileResult;
-          
-          // 3. カレンダー描画とローディング解除
+          // 2. 名簿確認は先に進めて、予約一覧はバックグラウンドで取得して表示を早める
+          const memberPromise = fetchMemberProfile(liffProfile.userId);
+          const reservationsPromise = fetchReservations();
+          memberProfile = await memberPromise;
+
+          // 3. まず画面を表示し、予約データは後で反映する
+          applyMemberStatusUI();
+
+          // 4. 予約データが終わればカレンダーだけ更新する
+          await reservationsPromise;
           renderCalendar();
           setCalendarLoading(false);
-          
-          // 4. ステータス判定・画面表示
-          applyMemberStatusUI();
           
         } catch (error) {
           setCalendarLoading(false);
@@ -730,8 +762,18 @@ async function initApp() {
     // 表示コントロール & ロジック
     // ----------------------------------------------------
     async function fetchReservations() {
+      const cached = readReservationCache();
+      if (Array.isArray(cached)) {
+        bookedData = cached;
+        return true;
+      }
+
       try {
-        const response = await fetch(GAS_URL, { method: "GET", cache: "no-store" });
+        const response = await fetch(`${GAS_URL}?_t=${Date.now()}`, {
+          method: "GET",
+          cache: "no-store",
+          credentials: "omit"
+        });
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`);
         }
@@ -742,11 +784,16 @@ async function initApp() {
         }
 
         bookedData = data;
+        writeReservationCache(data);
         return true;
       } catch (error) {
         console.error("予約データ取得エラー:", error);
+        const cachedFallback = readReservationCache();
+        if (Array.isArray(cachedFallback)) {
+          bookedData = cachedFallback;
+          return true;
+        }
         bookedData = [];
-        showToast("データ取得に失敗しました", "error");
         return false;
       }
     }

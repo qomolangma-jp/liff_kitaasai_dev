@@ -21,7 +21,7 @@ This folder contains a standalone Google Apps Script design that treats multiple
 - services/chat.gs: LINE webhook and postback processing
 - services/line-push.gs: LINE multicast push sender for library calls
 - services/notice.gs: monthly items and access logs
-- services/attendance.gs: question and answer APIs
+- services/attendance.gs: event lookup and attendance answer APIs
 - jobs/chat_sync.gs: scheduled matching job
 
 ## Required Script Properties
@@ -33,14 +33,14 @@ Set these before deployment:
 - SS_NOTICE_ID
 - SS_ATTENDANCE_ID
 - SS_CHAT_ID (optional, defaults to SS_BOOKROOM_ID)
-- SHEET_MEMBER_MAIN (default: 名簿)
-- SHEET_BOOKROOM_MAIN (default: 予約台帳)
+- SHEET_MEMBER_MAIN (default: users)
+- SHEET_BOOKROOM_MAIN (default: booklist)
 - SHEET_CHAT_LOG (default: chat)
 - SHEET_WEBHOOK_LOG (default: webhook_log)
 - SHEET_PUSH_LOG (default: push_log)
 - SHEET_NOTICE_ITEMS (default: monthly_items)
 - SHEET_AUDIT_LOG (default: access_log)
-- SHEET_ATTENDANCE_QUESTIONS (default: questions)
+- SHEET_ATTENDANCE_EVENTS (default: events)
 - SHEET_ATTENDANCE_ANSWERS (default: answers)
 - LINE_CHANNEL_ACCESS_TOKEN (optional if push API is not used)
 - LINE_CHANNEL_SECRET
@@ -48,6 +48,18 @@ Set these before deployment:
 - LINE_SIGNATURE_VERIFY_REQUIRED (default: false)
 - LIFF_TOKEN_VERIFY_ENABLED (true/false)
 - REGISTER_FORM_URL
+
+Attendance spreadsheet:
+
+- `events` headers: `event_id`, `event_name`, `event_datetime`, `event_location`,
+  `description`, `response_deadline`, `status`, `response_url`, `response_count`,
+  `attending_count`, `absent_count`, `undecided_count`
+- `answers` headers: `event_id`, `updated_at`, `member_name`, `group_name`,
+  `answer`, `memo`, `line_id`
+- Both tabs are in the spreadsheet configured by `SS_ATTENDANCE_ID`.
+- Only events whose `status` is `受付中` accept answers. Links must include `?q=EVENT_ID`.
+- Answers are upserted by `event_id` and `line_id`; member name and group are read from
+  the `users` sheet in `SS_MEMBER_ID`.
 
 Optional properties for multicast push:
 
@@ -57,7 +69,7 @@ Optional properties for multicast push:
 - PUSH_INCLUDE_ROLES (comma-separated, optional)
 - PUSH_EXCLUDE_STATUSES (default: ng,suspended,blocked,inactive)
 - PUSH_NOTIFICATION_DISABLED (default: false)
-- DIALOG_TARGET_SHEET (default: 名簿)
+- DIALOG_TARGET_SHEET (default: users)
 - HISTORY_SS_ID (optional, fallback: SS_MEMBER_ID)
 - HISTORY_SHEET_NAME (default: line_send_history)
 
@@ -85,7 +97,7 @@ GET:
 - action=bookroom_list
 - action=notice_bootstrap&ym=YYYY-MM&user_id=LINE_USER_ID
 - action=get_monthly_items&ym=YYYY-MM
-- action=attendance_question&qid=q_1&uid=LINE_USER_ID
+- action=attendance_question&qid=EVENT_ID&uid=LINE_USER_ID
 - action=member_profile_get&line_id=LINE_USER_ID
 
 POST:

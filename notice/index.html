@@ -3,7 +3,7 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-	<title>DX町内会 デジタル回覧板</title>
+	<title>[Dev] デジタル回覧板</title>
 	<script src="https://cdn.tailwindcss.com"></script>
 	<link rel="stylesheet" href="../common/app-shell.css">
 	<script src="../common/app-config.js"></script>
@@ -15,12 +15,17 @@
 				extend: {
 					colors: {
 						brand: {
-							50: '#f0fdf4',
-							100: '#dcfce7',
-							200: '#bbf7d0',
-							500: '#22c55e',
-							600: '#16a34a',
-							700: '#15803d'
+							50: '#eef9ff',
+							100: '#dff4ff',
+							200: '#c7ebff',
+							500: '#0d8bd8',
+							600: '#0a6eb8',
+							700: '#0a4d8f'
+						},
+						green: {
+							500: '#19b66d',
+							600: '#13a261',
+							700: '#0c8751'
 						}
 					}
 				}
@@ -34,6 +39,13 @@
 <body class="h-full app-page overflow-x-hidden">
 	<main class="app-shell app-shell--desktop">
 		<header class="app-header">
+			<div class="app-header__brand">
+				<img src="../common/logo_square.jpg" alt="小松Smart自治PJ" class="app-header__logo" />
+				<div class="app-header__brand-text">
+					<div class="app-header__brand-title">小松</div>
+					<div class="app-header__brand-sub">Smart自治PJ</div>
+				</div>
+			</div>
 			<div class="app-header__tabbar">
 				<button
 					id="tabBtnCurrent"
@@ -127,6 +139,10 @@
 						<p id="currentMonthLabel" class="text-lg font-bold text-brand-700 mt-1">-</p>
 					</article>
 
+					<p id="noticeAccessMessage" class="hidden rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs leading-relaxed text-amber-800">
+						回覧板の閲覧権限がありません。町内会名簿への登録と、管理者による閲覧許可が必要です。配布物は公開情報としてご覧いただけます。
+					</p>
+
 					<section id="noticeSection" class="space-y-2">
 						<h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
 							<span class="text-base">📌</span> 回覧板
@@ -180,13 +196,10 @@
 	</main>
 
 	<script>
-		const PAGE_CONFIG = (window.AppConfig && window.AppConfig.getPageConfig('notice')) || {};
-		const LIFF_ID = PAGE_CONFIG.liffId || '2008893549-d75d72lX';
-		const GAS_URL = PAGE_CONFIG.gasUrl || '';
-		if (!GAS_URL) {
-			throw new Error('AppConfig gasUrl is not configured for notice page');
-		}
-		const REGISTER_FORM_URL = PAGE_CONFIG.registerFormUrl || 'https://liff.line.me/2008893549-jeCNKx4Y';
+		const PAGE_CONFIG = (window.AppConfig && window.AppConfig.getRequiredPageConfig('notice')) || {};
+		const LIFF_ID = PAGE_CONFIG.liffId;
+		const GAS_URL = PAGE_CONFIG.gasUrl;
+		const REGISTER_FORM_URL = PAGE_CONFIG.registerFormUrl || '';
 		const LOCAL_MEMBER_STATUS_KEY = 'kitaasai_notice_local_test_member_status';
 		const MEMBER_CACHE_TTL_MS = 60 * 1000;
 		const MONTHLY_CACHE_TTL_MS = 3 * 60 * 1000;
@@ -201,7 +214,8 @@
 			currentItems: [],
 			archiveItems: [],
 			archiveLoaded: false,
-			archiveLoading: false
+			archiveLoading: false,
+			availableArchiveMonths: []
 		};
 
 		const el = {
@@ -217,8 +231,10 @@
 			userAvatar: document.getElementById('userAvatar'),
 			userName: document.getElementById('userName'),
 			currentMonthLabel: document.getElementById('currentMonthLabel'),
+			noticeSection: document.getElementById('noticeSection'),
 			noticeList: document.getElementById('noticeList'),
 			distributionList: document.getElementById('distributionList'),
+			noticeAccessMessage: document.getElementById('noticeAccessMessage'),
 			canvasCurrent: document.getElementById('canvasCurrent'),
 			canvasArchive: document.getElementById('canvasArchive'),
 			archiveMonthSelect: document.getElementById('archiveMonthSelect'),
@@ -269,6 +285,33 @@
 				months.push(ym);
 			}
 			return months;
+		}
+
+		function registerArchiveMonth(ym) {
+			if (!ym || !/^\d{4}-\d{2}$/.test(ym)) return;
+			const nextMonths = Array.from(new Set([...(state.availableArchiveMonths || []), ym]));
+			state.availableArchiveMonths = nextMonths.sort((a, b) => (a < b ? 1 : -1));
+		}
+
+		function getSelectableArchiveMonths() {
+			const months = state.availableArchiveMonths && state.availableArchiveMonths.length > 0
+				? state.availableArchiveMonths
+				: buildRecentMonths(12);
+			return Array.from(new Set(months)).sort((a, b) => (a < b ? 1 : -1));
+		}
+
+		function refreshArchiveSelector() {
+			const months = getSelectableArchiveMonths();
+			if (!months.length) return;
+			const current = el.archiveMonthSelect.value || months[0];
+			el.archiveMonthSelect.innerHTML = months
+				.map((ym) => `<option value="${ym}">${formatYmToJa(ym)}</option>`)
+				.join('');
+			if (months.includes(current)) {
+				el.archiveMonthSelect.value = current;
+			} else {
+				el.archiveMonthSelect.value = months[0];
+			}
 		}
 
 		function switchMainState(next) {
@@ -506,6 +549,7 @@
 			return {
 				isRegistered: normalized.isRegistered !== undefined ? normalized.isRegistered : status !== 'not_registered',
 				status,
+				canViewNotice: normalized.canViewNotice === true || (data && data.can_view_notice === true),
 				memberName: normalized.fullName || (data && (data.member_name || data.display_name)) || profile.displayName || '町民',
 				group: normalized.group || (data && (data.group || data.group_name)) || '',
 				registerFormUrl: normalized.registerFormUrl || (data && data.register_form_url) || REGISTER_FORM_URL
@@ -519,6 +563,7 @@
 					return {
 						isRegistered: false,
 						status: 'not_registered',
+						canViewNotice: false,
 						memberName: '未登録ユーザー',
 						registerFormUrl: REGISTER_FORM_URL
 					};
@@ -527,6 +572,7 @@
 					return {
 						isRegistered: true,
 						status: 'suspended',
+						canViewNotice: false,
 						memberName: '利用制限ユーザー',
 						registerFormUrl: REGISTER_FORM_URL
 					};
@@ -534,6 +580,7 @@
 				return {
 					isRegistered: true,
 					status: 'ok',
+					canViewNotice: true,
 					memberName: 'DX町内会 テスト住民',
 					registerFormUrl: REGISTER_FORM_URL
 				};
@@ -584,7 +631,10 @@
 		async function fetchMonthlyItems(ym) {
 			const userId = state.profile?.userId || '';
 			const cached = readMonthlyItemsCache(ym, userId);
-			if (cached) return cached;
+			if (cached) {
+				registerArchiveMonth(ym);
+				return cached;
+			}
 
 			const raw = await gasGet({
 				action: 'get_monthly_items',
@@ -596,6 +646,11 @@
 			const normalized = rows
 				.map((item) => toMonthlyItem(item))
 				.filter((item) => item.label || item.url !== '#');
+
+			if (normalized.length > 0) {
+				registerArchiveMonth(ym);
+				refreshArchiveSelector();
+			}
 
 			writeMonthlyItemsCache(ym, userId, normalized);
 
@@ -680,10 +735,13 @@
 		function renderCurrentItems(items, ym) {
 			const notices = items.filter((item) => classifyItem(item.type) === 'notice');
 			const distributions = items.filter((item) => classifyItem(item.type) === 'distribution');
+			const canViewNotice = state.member && state.member.canViewNotice === true;
 
 			el.currentMonthLabel.textContent = formatYmToJa(ym);
+			el.noticeSection.classList.toggle('hidden', !canViewNotice);
+			el.noticeAccessMessage.classList.toggle('hidden', canViewNotice);
 			if (notices.length === 0) {
-				renderEmpty(el.noticeList, '今月の回覧板はありません');
+				renderEmpty(el.noticeList, canViewNotice ? '今月の回覧板はありません' : '回覧板の閲覧権限がありません');
 			} else {
 				el.noticeList.innerHTML = notices.map((item) => createItemCard(item)).join('');
 			}
@@ -833,10 +891,7 @@
 		}
 
 		function setupArchiveSelector() {
-			const months = buildRecentMonths(12);
-			el.archiveMonthSelect.innerHTML = months
-				.map((ym) => `<option value="${ym}">${formatYmToJa(ym)}</option>`)
-				.join('');
+			refreshArchiveSelector();
 
 			el.archiveMonthSelect.addEventListener('change', async (event) => {
 				const ym = event.target.value;
@@ -919,6 +974,7 @@
 
 				const ym = getCurrentYm();
 				setLoadingMessage('住民名簿と照合中...');
+				registerArchiveMonth(ym);
 				if (state.isLocalMode) {
 					const currentItemsPromise = fetchMonthlyItems(ym);
 					state.member = await fetchMemberProfile();
@@ -947,17 +1003,9 @@
 				el.userAvatar.src = state.profile.pictureUrl || 'https://placehold.jp/96x96.png';
 				el.registerLink.href = state.member.registerFormUrl || REGISTER_FORM_URL;
 
-				if (!state.member.isRegistered || state.member.status === 'not_registered') {
-					switchMainState('not_registered');
-					return;
-				}
-				if (state.member.status === 'suspended') {
-					switchMainState('suspended');
-					return;
-				}
-
 				setLoadingMessage('今月の回覧データを取得中...');
 				renderCurrentItems(state.currentItems, ym);
+				refreshArchiveSelector();
 				renderEmpty(el.archiveList, 'バックナンバーを見ると読み込みます');
 				state.archiveLoaded = false;
 

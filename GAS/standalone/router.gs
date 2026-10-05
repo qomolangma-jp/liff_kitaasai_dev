@@ -93,7 +93,12 @@ function routeGet(action, e) {
 
     case "get_monthly_items":
       return okResponse(action, {
-        items: handleGetMonthlyItems({ ym: p.ym || "" })
+        items: handleGetMonthlyItems({
+          ym: p.ym || "",
+          userId: p.user_id || p.uid || "",
+          displayName: p.display_name || "",
+          pictureUrl: p.picture_url || ""
+        })
       }, callback);
 
     case "notice_bootstrap":
@@ -107,7 +112,7 @@ function routeGet(action, e) {
     case "attendance_question":
       return jsonResponse(handleAttendanceQuestion({
         userId: p.uid || p.user_id || "",
-        qid: p.qid || ""
+        qid: p.qid || p.event_id || ""
       }), callback);
 
     case "member_profile_get":
@@ -234,6 +239,9 @@ function routePost(action, e, payload) {
     }
 
     case "attendance_answer":
+      if (!verifyLiffToken(payload.liff_token)) {
+        return errorResponse(action, "Invalid LIFF token", "", callback);
+      }
       return jsonResponse(handleAttendanceAnswer(payload), callback);
 
     case "member_profile_upsert":

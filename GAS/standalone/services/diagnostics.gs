@@ -9,7 +9,7 @@ function handleDiagnosticsStatus() {
   var bookroomSsId = String(APP_CONFIG.spreadsheets.bookroom || "").trim();
   var chatSsId = String(APP_CONFIG.spreadsheets.chat || "").trim();
   var webhookSheet = String(APP_CONFIG.sheets.webhookLog || "webhook_log");
-  var bookroomSheet = String(APP_CONFIG.sheets.bookroomMain || "予約台帳");
+  var bookroomSheet = String(APP_CONFIG.sheets.bookroomMain || "booklist");
 
   var status = {
     ok: true,

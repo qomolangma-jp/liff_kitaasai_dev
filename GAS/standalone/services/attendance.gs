@@ -1,115 +1,175 @@
-function handleAttendanceQuestion(input) {
-  var qid = String(input.qid || "q_1").trim();
-  var userId = String(input.userId || "").trim();
+var ATTENDANCE_OPTIONS = ["出席", "欠席", "未定"];
+var ATTENDANCE_EVENT_HEADERS = [
+  "event_id",
+  "event_name",
+  "event_datetime",
+  "event_location",
+  "description",
+  "response_deadline",
+  "status",
+  "response_url",
+  "response_count",
+  "attending_count",
+  "absent_count",
+  "undecided_count"
+];
+var ATTENDANCE_ANSWER_HEADERS = [
+  "event_id",
+  "updated_at",
+  "member_name",
+  "group_name",
+  "answer",
+  "memo",
+  "line_id"
+];
 
-  var qSheet = getSheetOrThrow(APP_CONFIG.spreadsheets.attendance, APP_CONFIG.sheets.attendanceQuestions);
-  var qValues = qSheet.getDataRange().getDisplayValues();
-  if (qValues.length <= 1) {
-    return { error: true, message: "question data not found" };
+function handleAttendanceQuestion(input) {
+  var eventId = String((input && input.qid) || "").trim();
+  if (!eventId) {
+    return { error: true, message: "イベントIDが指定されていません。" };
   }
 
-  var qHeader = buildHeaderIndexMap(qValues[0]);
-  var qidCol = qHeader["qid"];
-  var titleCol = qHeader["title"];
-  var textCol = qHeader["text"];
-  var selectionsCol = qHeader["selections"];
+  var eventSheet = getSheetOrThrow(
+    APP_CONFIG.spreadsheets.attendance,
+    APP_CONFIG.sheets.attendanceEvents
+  );
+  var eventValues = eventSheet.getDataRange().getDisplayValues();
+  var eventHeader = buildHeaderIndexMap(eventValues[0] || []);
+  requireAttendanceHeaders(eventHeader, ATTENDANCE_EVENT_HEADERS, "events");
 
-  var questionRow = null;
-  for (var i = 1; i < qValues.length; i++) {
-    if (String(qValues[i][qidCol] || "").trim() === qid) {
-      questionRow = qValues[i];
+  var event = null;
+  for (var i = 1; i < eventValues.length; i++) {
+    if (String(eventValues[i][eventHeader["event_id"]] || "").trim() === eventId) {
+      event = eventValues[i];
       break;
     }
   }
 
-  if (!questionRow) {
-    return { error: true, message: "qid not found" };
+  if (!event) {
+    return { error: true, message: "イベントが見つかりません。リンクをご確認ください。" };
+  }
+  if (String(event[eventHeader["status"]] || "").trim() !== "受付中") {
+    return { error: true, message: "このイベントは回答を受け付けていません。" };
   }
 
-  var previous = readAttendanceAnswer(userId, qid);
+  var userId = String((input && input.userId) || "").trim();
+  var previous = readAttendanceAnswer(userId, eventId);
   return {
     error: false,
-    qid: qid,
-    title: String(questionRow[titleCol] || ""),
-    text: String(questionRow[textCol] || ""),
-    selections: parseSelectionList(questionRow[selectionsCol]),
+    event_id: eventId,
+    event_name: String(event[eventHeader["event_name"]] || ""),
+    event_datetime: String(event[eventHeader["event_datetime"]] || ""),
+    event_location: String(event[eventHeader["event_location"]] || ""),
+    description: String(event[eventHeader["description"]] || ""),
+    response_deadline: String(event[eventHeader["response_deadline"]] || ""),
+    selections: ATTENDANCE_OPTIONS,
     previousAnswer: previous.answer,
     previousMemo: previous.memo
   };
 }
 
 function handleAttendanceAnswer(payload) {
-  var userId = String(payload.lineId || payload.line_id || "").trim();
-  var qid = String(payload.qid || "").trim();
-  var answer = String(payload.answer || "").trim();
-  var memo = String(payload.memo || "").trim();
+  var data = payload || {};
+  var userId = String(data.lineId || data.line_id || "").trim();
+  var eventId = String(data.qid || data.event_id || "").trim();
+  var answer = String(data.answer || "").trim();
+  var memo = String(data.memo || "").trim();
 
-  if (!userId || !qid || !answer) {
-    return { success: false, message: "lineId/qid/answer are required" };
+  if (!userId || !eventId || !answer) {
+    return { success: false, message: "回答に必要な情報が不足しています。" };
+  }
+  if (ATTENDANCE_OPTIONS.indexOf(answer) < 0) {
+    return { success: false, message: "選択された回答が正しくありません。" };
   }
 
-  var sheet = getOrCreateSheet(
+  var eventResult = handleAttendanceQuestion({ qid: eventId });
+  if (eventResult.error) {
+    return { success: false, message: eventResult.message };
+  }
+
+  var member = handleMemberCheck({ userId: userId });
+  if (!member.isRegistered || member.status !== "ok") {
+    return { success: false, message: "住民名簿への登録を確認できません。役員にお問い合わせください。" };
+  }
+
+  var sheet = getSheetOrThrow(
     APP_CONFIG.spreadsheets.attendance,
-    APP_CONFIG.sheets.attendanceAnswers,
-    ["created_at", "updated_at", "line_id", "qid", "answer", "memo"]
+    APP_CONFIG.sheets.attendanceAnswers
   );
-
-  var values = sheet.getDataRange().getDisplayValues();
-  var header = buildHeaderIndexMap(values[0]);
-  var idCol = header["line_id"];
-  var qidCol = header["qid"];
-
-  var targetRow = -1;
-  for (var i = 1; i < values.length; i++) {
-    if (String(values[i][idCol] || "").trim() === userId && String(values[i][qidCol] || "").trim() === qid) {
-      targetRow = i + 1;
-      break;
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    var values = sheet.getDataRange().getDisplayValues();
+    var header = buildHeaderIndexMap(values[0] || []);
+    requireAttendanceHeaders(header, ATTENDANCE_ANSWER_HEADERS, "answers");
+    var targetRow = -1;
+    for (var i = 1; i < values.length; i++) {
+      if (
+        String(values[i][header["event_id"]] || "").trim() === eventId &&
+        String(values[i][header["line_id"]] || "").trim() === userId
+      ) {
+        targetRow = i + 1;
+        break;
+      }
     }
-  }
 
-  if (targetRow > 0) {
-    sheet.getRange(targetRow, header["updated_at"] + 1).setValue(new Date());
-    sheet.getRange(targetRow, header["answer"] + 1).setValue(answer);
-    sheet.getRange(targetRow, header["memo"] + 1).setValue(memo);
-  } else {
-    sheet.appendRow([new Date(), new Date(), userId, qid, answer, memo]);
+    if (targetRow > 0) {
+      sheet.getRange(targetRow, header["updated_at"] + 1).setValue(new Date());
+      sheet.getRange(targetRow, header["member_name"] + 1).setValue(member.fullName);
+      sheet.getRange(targetRow, header["group_name"] + 1).setValue(member.group);
+      sheet.getRange(targetRow, header["answer"] + 1).setValue(answer);
+      sheet.getRange(targetRow, header["memo"] + 1).setValue(memo);
+    } else {
+      var row = new Array(values[0].length).fill("");
+      row[header["event_id"]] = eventId;
+      row[header["updated_at"]] = new Date();
+      row[header["member_name"]] = member.fullName;
+      row[header["group_name"]] = member.group;
+      row[header["answer"]] = answer;
+      row[header["memo"]] = memo;
+      row[header["line_id"]] = userId;
+      sheet.appendRow(row);
+    }
+  } finally {
+    lock.releaseLock();
   }
 
   return { success: true };
 }
 
-function readAttendanceAnswer(userId, qid) {
+function readAttendanceAnswer(userId, eventId) {
   if (!userId) return { answer: "", memo: "" };
 
-  var sheet = getOrCreateSheet(
+  var sheet = getSheetOrThrow(
     APP_CONFIG.spreadsheets.attendance,
-    APP_CONFIG.sheets.attendanceAnswers,
-    ["created_at", "updated_at", "line_id", "qid", "answer", "memo"]
+    APP_CONFIG.sheets.attendanceAnswers
   );
-
   var values = sheet.getDataRange().getDisplayValues();
   if (values.length <= 1) return { answer: "", memo: "" };
 
   var header = buildHeaderIndexMap(values[0]);
-  var idCol = header["line_id"];
-  var qidCol = header["qid"];
-  var ansCol = header["answer"];
-  var memoCol = header["memo"];
-
+  requireAttendanceHeaders(header, ATTENDANCE_ANSWER_HEADERS, "answers");
   for (var i = 1; i < values.length; i++) {
-    if (String(values[i][idCol] || "").trim() === userId && String(values[i][qidCol] || "").trim() === qid) {
+    if (
+      String(values[i][header["event_id"]] || "").trim() === eventId &&
+      String(values[i][header["line_id"]] || "").trim() === userId
+    ) {
       return {
-        answer: String(values[i][ansCol] || ""),
-        memo: String(values[i][memoCol] || "")
+        answer: String(values[i][header["answer"]] || ""),
+        memo: String(values[i][header["memo"]] || "")
       };
     }
   }
-
   return { answer: "", memo: "" };
 }
 
-function parseSelectionList(raw) {
-  var s = String(raw || "").trim();
-  if (!s) return [];
-  return s.split(/[\n\r\t,、]/).map(function (x) { return String(x || "").trim(); }).filter(Boolean);
+function requireAttendanceHeaders(header, requiredHeaders, sheetName) {
+  var missing = requiredHeaders.filter(function (name) {
+    return header[name] === undefined;
+  });
+  if (missing.length) {
+    throw new Error(
+      "Missing required headers in " + sheetName + " sheet: " + missing.join(", ")
+    );
+  }
 }

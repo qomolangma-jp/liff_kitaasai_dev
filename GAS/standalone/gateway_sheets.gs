@@ -10,11 +10,50 @@ function openSpreadsheetCached(id) {
   return SS_CACHE[id];
 }
 
+function resolveSheetNameWithFallback(spreadsheetId, requestedSheetName) {
+  var ss = openSpreadsheetCached(spreadsheetId);
+  var name = String(requestedSheetName || "").trim();
+  if (!name) {
+    return name;
+  }
+
+  var candidates = [];
+  var seen = {};
+
+  function pushCandidate(candidate) {
+    var value = String(candidate || "").trim();
+    if (!value || seen[value]) return;
+    seen[value] = true;
+    candidates.push(value);
+  }
+
+  pushCandidate(name);
+  if (name === "users" || name === "名簿") {
+    pushCandidate(name === "users" ? "名簿" : "users");
+  } else if (name === "booklist" || name === "予約台帳") {
+    pushCandidate(name === "booklist" ? "予約台帳" : "booklist");
+  } else {
+    pushCandidate("users");
+    pushCandidate("名簿");
+    pushCandidate("booklist");
+    pushCandidate("予約台帳");
+  }
+
+  for (var i = 0; i < candidates.length; i++) {
+    if (ss.getSheetByName(candidates[i])) {
+      return candidates[i];
+    }
+  }
+
+  return name;
+}
+
 function getSheetOrThrow(spreadsheetId, sheetName) {
   var ss = openSpreadsheetCached(spreadsheetId);
-  var sheet = ss.getSheetByName(sheetName);
+  var resolvedSheetName = resolveSheetNameWithFallback(spreadsheetId, sheetName);
+  var sheet = ss.getSheetByName(resolvedSheetName);
   if (!sheet) {
-    throw new Error("Sheet not found: " + sheetName + " (spreadsheet: " + spreadsheetId + ")");
+    throw new Error("Sheet not found: " + resolvedSheetName + " (spreadsheet: " + spreadsheetId + ")");
   }
   return sheet;
 }

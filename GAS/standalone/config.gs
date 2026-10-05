@@ -38,8 +38,8 @@ var APP_CONFIG = (function buildConfig() {
       attendance: get("SS_ATTENDANCE_ID", "")
     },
     sheets: {
-      memberMain: get("SHEET_MEMBER_MAIN", "名簿"),
-      bookroomMain: get("SHEET_BOOKROOM_MAIN", "予約台帳"),
+      memberMain: get("SHEET_MEMBER_MAIN", "users"),
+      bookroomMain: get("SHEET_BOOKROOM_MAIN", "booklist"),
       chatLog: get("SHEET_CHAT_LOG", "chat"),
       webhookLog: get("SHEET_WEBHOOK_LOG", "webhook_log"),
       pushLog: get("SHEET_PUSH_LOG", "push_log"),
@@ -48,7 +48,7 @@ var APP_CONFIG = (function buildConfig() {
       apiAuditLog: get("SHEET_API_AUDIT_LOG", "access_api_log"),
       memberLastSeen: get("SHEET_MEMBER_LAST_SEEN", "member_last_seen"),
       summaryMonthly: get("SHEET_SUMMARY_MONTHLY", "summary_monthly"),
-      attendanceQuestions: get("SHEET_ATTENDANCE_QUESTIONS", "questions"),
+      attendanceEvents: get("SHEET_ATTENDANCE_EVENTS", "events"),
       attendanceAnswers: get("SHEET_ATTENDANCE_ANSWERS", "answers"),
       safetyCheckSettings: get("SHEET_SAFETY_CHECK_SETTINGS", "survey_settings"),
       safetyCheckResponses: get("SHEET_SAFETY_CHECK_RESPONSES", "survey_responses"),
@@ -60,7 +60,7 @@ var APP_CONFIG = (function buildConfig() {
     push: {
       historySpreadsheetId: get("HISTORY_SS_ID", ""),
       historySheetName: get("HISTORY_SHEET_NAME", "line_send_history"),
-      dialogTargetSheet: get("DIALOG_TARGET_SHEET", "名簿")
+      dialogTargetSheet: get("DIALOG_TARGET_SHEET", "users")
     }
   };
 })();

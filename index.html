@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DX町内会|デジタル回覧板用名簿登録フォーム</title>
+  <title>[Dev] 名簿登録フォーム</title>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -12,8 +12,8 @@
       margin: 0;
       min-height: 100vh;
       background:
-        radial-gradient(circle at top, rgba(34, 197, 94, 0.14), transparent 34%),
-        linear-gradient(180deg, #e2e8f0 0%, #f8fafc 45%, #eef2f7 100%);
+        radial-gradient(circle at top, rgba(13, 139, 216, 0.16), transparent 34%),
+        linear-gradient(180deg, #eaf3f9 0%, #f8fafc 45%, #eff7f3 100%);
       color: #0f172a;
     }
     .container {
@@ -26,8 +26,32 @@
       border: 1px solid rgba(226, 232, 240, 0.95);
       box-shadow: 0 24px 80px rgba(15, 23, 42, 0.16);
     }
+    .brand-header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 18px 20px 8px;
+      background: linear-gradient(135deg, #0a6eb8 0%, #0d8bd8 35%, #16b66b 100%);
+      color: #fff;
+    }
+    .brand-header__logo {
+      width: 52px;
+      height: 52px;
+      object-fit: cover;
+      border-radius: 14px;
+      border: 2px solid rgba(255,255,255,0.5);
+      background: #fff;
+    }
+    .brand-header__title {
+      font-size: 1.1rem;
+      font-weight: 900;
+      letter-spacing: 0.06em;
+      margin: 0;
+      color: #fff;
+    }
     .hero {
-      background: linear-gradient(135deg, #0f172a 0%, #0f172a 50%, #166534 100%);
+      background: linear-gradient(135deg, #0a6eb8 0%, #0d8bd8 35%, #14b66c 100%);
       color: #fff;
       padding: 22px 20px 18px;
     }
@@ -110,8 +134,8 @@
     .radio-group label:has(input:checked),
     .checkbox-group label:has(input:checked),
     .radio-group label.is-selected,
-    .checkbox-group label.is-selected { background: linear-gradient(135deg, #16a34a, #15803d); border-color: #16a34a; color: #fff; box-shadow: 0 10px 18px rgba(22, 163, 74, 0.18); }
-    .radio-group label:hover, .checkbox-group label:hover { border-color: #16a34a; color: #16a34a; }
+    .checkbox-group label.is-selected { background: linear-gradient(135deg, #0a6eb8, #14b66c); border-color: #0a6eb8; color: #fff; box-shadow: 0 10px 18px rgba(10, 110, 184, 0.18); }
+    .radio-group label:hover, .checkbox-group label:hover { border-color: #0a6eb8; color: #0a6eb8; }
     .radio-group label:has(input:checked):hover,
     .checkbox-group label:has(input:checked):hover,
     .radio-group label.is-selected:hover,
@@ -124,7 +148,7 @@
     button {
       width: 100%;
       padding: 15px;
-      background: linear-gradient(135deg, #16a34a, #15803d);
+      background: linear-gradient(135deg, #0a6eb8, #14b66c);
       color: white;
       border: none;
       border-radius: 18px;
@@ -132,7 +156,7 @@
       font-weight: 900;
       cursor: pointer;
       transition: transform 0.2s, box-shadow 0.2s, opacity 0.3s;
-      box-shadow: 0 12px 24px rgba(22, 163, 74, 0.22);
+      box-shadow: 0 12px 24px rgba(10, 110, 184, 0.22);
     }
     button:hover { transform: translateY(-1px); }
     button:disabled { opacity: 0.55; cursor: not-allowed; box-shadow: none; transform: none; }
@@ -295,7 +319,7 @@
     <form id="profileForm">
       <div class="row-flex keep-row-on-mobile">
         <div class="half">
-          <label>氏<span class="required-mark">※</span></label>
+          <label>姓<span class="required-mark">※</span></label>
           <input type="text" name="name_2nd" placeholder="例: 山田" required>
         </div>
         <div class="half">
@@ -306,7 +330,7 @@
 
       <div class="row-flex keep-row-on-mobile">
         <div class="half">
-          <label>シ<span class="required-mark">※</span></label>
+          <label>セイ<span class="required-mark">※</span></label>
           <input type="text" name="kana_2nd" placeholder="例: ヤマダ" required>
         </div>
         <div class="half">
@@ -332,6 +356,7 @@
       <div class="radio-group">
         <label><input type="radio" name="is_digital" value="1"> スマホで受け取る</label>
         <label><input type="radio" name="is_digital" value="2"> 紙で受け取る</label>
+        <label><input type="radio" name="is_digital" value="3"> 両方で受け取る</label>
       </div>
 
       <label>カテゴリ（複数選択可）</label>
@@ -344,7 +369,7 @@
         <label><input type="checkbox" name="role" value="青壮年部"> 青壮年部</label>
         <label><input type="checkbox" name="role" value="婦人部"> 婦人部</label>
         <label><input type="checkbox" name="role" value="民生委員"> 民生委員</label>
-        <label><input type="checkbox" name="role" value="ほがらかクラブ"> ほがらかクラブ</label>
+        <label><input type="checkbox" name="role" value="老人会"> 老人会</label>
         <label><input type="checkbox" name="role" value="神社奉賛会"> 神社奉賛会</label>
       </div>
 
@@ -362,12 +387,9 @@
   <script>
     // ※ ご自身の公開URLに変更してください
 
-    const PAGE_CONFIG = (window.AppConfig && window.AppConfig.getPageConfig('profile')) || {};
-    const LIFF_ID = PAGE_CONFIG.liffId || '2008893549-jeCNKx4Y';
-    const GAS_URL = PAGE_CONFIG.gasUrl || "";
-    if (!GAS_URL) {
-      throw new Error("AppConfig gasUrl is not configured for profile page");
-    }
+    const PAGE_CONFIG = (window.AppConfig && window.AppConfig.getRequiredPageConfig('profile')) || {};
+    const LIFF_ID = PAGE_CONFIG.liffId;
+    const GAS_URL = PAGE_CONFIG.gasUrl;
 
     function isLocalEnvironment() {
       return window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";

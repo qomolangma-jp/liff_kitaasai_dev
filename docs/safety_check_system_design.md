@@ -43,6 +43,7 @@ The member sheet should contain, at minimum:
 - `name_2nd`
 - `group`
 - `status`
+- `can_view_notice`
 - `updated_at`
 
 The survey system then does this:

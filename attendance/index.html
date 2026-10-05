@@ -3,18 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>出欠回答フォーム</title>
+  <title>[Dev] 出欠回答フォーム</title>
   <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   
   <style>
     /* 全体のベース設定（スマホアプリライクなUI） */
     :root {
-      --primary-color: #06C755; /* LINEグリーン */
-      --bg-color: #f4f5f7;
+      --primary-color: #0a6eb8;
+      --primary-color-strong: #084d8d;
+      --accent-color: #18b767;
+      --bg-color: #edf4f9;
       --card-bg: #ffffff;
-      --text-main: #333333;
-      --text-sub: #666666;
-      --border-color: #e5e5e5;
+      --text-main: #1d3557;
+      --text-sub: #4d6787;
+      --border-color: #dfeaf4;
     }
     
     body {
@@ -35,11 +37,35 @@
 
     /* ヘッダー */
     header {
-      background-color: var(--card-bg);
+      background: linear-gradient(135deg, #0a6eb8 0%, #0d8bd8 35%, #14b66c 100%);
       padding: 16px;
-      text-align: center;
-      border-bottom: 1px solid var(--border-color);
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      box-shadow: 0 8px 18px rgba(10,110,184,0.15);
+      border-bottom: none;
+    }
+
+    .brand-header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      color: #ffffff;
+    }
+
+    .brand-header__logo {
+      width: 52px;
+      height: 52px;
+      object-fit: cover;
+      border-radius: 14px;
+      border: 2px solid rgba(255,255,255,0.5);
+      background: #fff;
+    }
+
+    .brand-header__title {
+      font-size: 14px;
+      font-weight: 900;
+      letter-spacing: 0.06em;
+      margin: 0;
+      color: #ffffff;
     }
 
     h1 {
@@ -80,6 +106,21 @@
       white-space: pre-wrap;
     }
 
+    .event-meta {
+      display: grid;
+      gap: 8px;
+      margin: -8px 0 20px;
+      color: var(--text-sub);
+      font-size: 14px;
+    }
+
+    .event-meta-row {
+      display: grid;
+      grid-template-columns: 5em 1fr;
+      gap: 8px;
+      line-height: 1.5;
+    }
+
     /* 選択肢（ラジオボタン） */
     .radio-group {
       display: flex;
@@ -110,14 +151,20 @@
     .btn-submit {
       width: 100%;
       padding: 16px;
-      background-color: var(--primary-color);
+      background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
       color: #ffffff;
       border: none;
-      border-radius: 8px;
+      border-radius: 12px;
       font-size: 16px;
-      font-weight: bold;
+      font-weight: 800;
       cursor: pointer;
-      box-shadow: 0 4px 6px rgba(6, 199, 85, 0.2);
+      box-shadow: 0 10px 18px rgba(10, 110, 184, 0.18);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .btn-submit:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 22px rgba(10, 110, 184, 0.22);
     }
 
     .btn-submit:active {
@@ -141,13 +188,21 @@
 
   <div class="container">
     <header>
-      <h1>出欠確認</h1>
+      <div class="brand-header">
+        <img src="../common/logo_square.jpg" alt="小松Smart自治PJ" class="brand-header__logo" />
+        <h1 class="brand-header__title">小松 Smart自治PJ</h1>
+      </div>
     </header>
 
     <div id="loading">データを読み込んでいます...</div>
 
     <div id="form-container" class="content-box" style="display: none;">
       <div id="q-title" class="question-title"></div>
+      <div class="event-meta">
+        <div class="event-meta-row"><strong>日時</strong><span id="event-datetime"></span></div>
+        <div class="event-meta-row"><strong>場所</strong><span id="event-location"></span></div>
+        <div class="event-meta-row" id="deadline-row" style="display: none;"><strong>回答期限</strong><span id="event-deadline"></span></div>
+      </div>
       <div id="q-text" class="question-text"></div>
       
       <form id="attendance-form">
@@ -168,145 +223,149 @@
     // ==========================================
     // ★ 必須設定（ご自身のものに書き換えてください）★
     // ==========================================
-    const PAGE_CONFIG = (window.AppConfig && window.AppConfig.getPageConfig('attendance')) || {};
-    const LIFF_ID = PAGE_CONFIG.liffId || '2008893549-jeCNKx4Y';
-    const GAS_API_URL = PAGE_CONFIG.gasUrl || "";
-    if (!GAS_API_URL) {
-      throw new Error("AppConfig gasUrl is not configured for attendance page");
-    }
+    const PAGE_CONFIG = (window.AppConfig && window.AppConfig.getRequiredPageConfig('attendance')) || {};
+    const LIFF_ID = PAGE_CONFIG.liffId;
+    const GAS_API_URL = PAGE_CONFIG.gasUrl;
     // ==========================================
 
     let userProfile = {};
-    // --- ここを追加！：URLパラメータから qid を取得 ---
-    const urlParams = new URLSearchParams(window.location.search);
-    const QID = urlParams.get('q') || "q_1"; // ?q=○○ が無い場合はデフォルトで q_1
-    // ------------------------------------------------    
+    let eventId = "";
+    const answerOptions = ["出席", "欠席", "未定"];
+    const loading = document.getElementById("loading");
 
     window.onload = function() {
-      // 1. LIFF初期化
       liff.init({ liffId: LIFF_ID })
         .then(() => {
-          if (!liff.isLoggedIn()) {
-            liff.login();
-          } else {
-            return liff.getProfile();
+          eventId = getEventId();
+          if (!eventId) {
+            loading.textContent = "イベントIDがありません。イベントの回答リンクから開いてください。";
+            return null;
           }
+
+          if (!liff.isLoggedIn()) {
+            const redirectUrl = new URL(window.location.href);
+            redirectUrl.searchParams.set("q", eventId);
+            liff.login({ redirectUri: redirectUrl.toString() });
+            return null;
+          }
+          return liff.getProfile();
         })
         .then(profile => {
-          if (profile) {
-            userProfile = profile;
-            loadQuestion(); // プロフィール取得後にGASから設問を取得
-          }
+          if (!profile) return;
+          userProfile = profile;
+          return loadEvent();
         })
-        .catch(err => {
-          console.error("LIFF init failed:", err);
-          document.getElementById('loading').textContent = "エラーが発生しました。LINEアプリから開き直してください。";
+        .catch(error => {
+          console.error("LIFF init failed:", error);
+          loading.textContent = "エラーが発生しました。LINEアプリから開き直してください。";
         });
     };
 
-    // 2. GASから設問データを取得 (GETリクエスト)
-    function loadQuestion() {
-    // 開発中のデバッグ用：URLをコンソールに表示
-    const requestUrl = `${GAS_API_URL}?uid=${userProfile.userId}&qid=${QID}`;
-    console.log("Fetching from:", requestUrl);
-    
-    fetch(requestUrl)
+    function getEventId() {
+      const currentParams = new URLSearchParams(window.location.search);
+      const directEventId = currentParams.get("q");
+      if (directEventId) return directEventId.trim();
+
+      const liffState = typeof liff.state === "string"
+        ? liff.state
+        : (currentParams.get("liff.state") || "");
+      if (!liffState) return "";
+
+      const stateUrl = new URL(liffState, window.location.origin);
+      return (stateUrl.searchParams.get("q") || "").trim();
+    }
+
+    function loadEvent() {
+      const requestUrl = new URL(GAS_API_URL);
+      requestUrl.searchParams.set("action", "attendance_question");
+      requestUrl.searchParams.set("qid", eventId);
+      requestUrl.searchParams.set("uid", userProfile.userId);
+
+      return fetch(requestUrl)
         .then(response => response.json())
-        .then(res => {
-              if (res.error) {
-                document.getElementById('loading').innerHTML = `<p style="color:red; font-weight:bold;">${res.message}</p>`;
-                return;
-              }
-              
-              document.getElementById('q-title').textContent = res.title;
-              document.getElementById('q-text').textContent = res.text;
-              
-              const radioContainer = document.getElementById('radio-buttons');
-              radioContainer.innerHTML = '';
-              
-              if (res.selections && Array.isArray(res.selections)) {
-                res.selections.forEach((sel) => {
-                  const label = document.createElement('label');
-                  label.className = 'radio-label';
-                  
-                  // ★追加：過去の回答(res.previousAnswer)と一致したらチェックを入れる
-                  const isChecked = (sel === res.previousAnswer) ? "checked" : "";
-                  label.innerHTML = `<input type="radio" name="q1_answer" value="${sel}" ${isChecked}> ${sel}`;
-                  radioContainer.appendChild(label);
-                });
-              }
+        .then(result => {
+          if (result.error || result.ok === false) {
+            loading.textContent = getApiErrorMessage(result, "イベント情報を読み込めませんでした。");
+            return;
+          }
 
-              // ★追加：過去の備考(res.previousMemo)があればテキストエリアに入れる
-              if (res.previousMemo) {
-                document.getElementById('memo-input').value = res.previousMemo;
-              }
+          document.getElementById("q-title").textContent = result.event_name;
+          document.getElementById("event-datetime").textContent = result.event_datetime;
+          document.getElementById("event-location").textContent = result.event_location;
+          document.getElementById("q-text").textContent = result.description;
+          if (result.response_deadline) {
+            document.getElementById("event-deadline").textContent = result.response_deadline;
+            document.getElementById("deadline-row").style.display = "grid";
+          }
 
-              document.getElementById('loading').style.display = 'none';
-              document.getElementById('form-container').style.display = 'block';
-        })
-        .catch(error => {
-        console.error("API Fetch error:", error);
-        document.getElementById('loading').textContent = "通信エラーが発生しました。";
+          const radioContainer = document.getElementById("radio-buttons");
+          radioContainer.replaceChildren();
+          answerOptions.forEach(option => {
+            const label = document.createElement("label");
+            label.className = "radio-label";
+            const radio = document.createElement("input");
+            radio.type = "radio";
+            radio.name = "attendance_answer";
+            radio.value = option;
+            radio.checked = option === result.previousAnswer;
+            const text = document.createTextNode(option);
+            label.append(radio, text);
+            radioContainer.appendChild(label);
+          });
+
+          document.getElementById("memo-input").value = result.previousMemo || "";
+          loading.style.display = "none";
+          document.getElementById("form-container").style.display = "block";
         });
     }
 
-
-    // 3. 回答をGASへ送信 (POSTリクエスト)
     function submitForm() {
-      const radios = document.getElementsByName('q1_answer');
-      let selectedValue = "";
-      for (let i = 0; i < radios.length; i++) {
-        if (radios[i].checked) {
-          selectedValue = radios[i].value;
-          break;
-        }
-      }
-
-      if (!selectedValue) {
+      const selected = document.querySelector('input[name="attendance_answer"]:checked');
+      if (!selected) {
         alert("回答を選択してください。");
         return;
       }
 
-      // ★追加：備考欄の値を取得
-      const memoValue = document.getElementById('memo-input').value;
+      const submitButton = document.getElementById("submit-btn");
+      submitButton.disabled = true;
+      submitButton.textContent = "送信中...";
 
-      const submitBtn = document.getElementById('submit-btn');
-      submitBtn.disabled = true;
-      submitBtn.textContent = "送信中...";
-
-      // 送信するデータ
-      const answerData = {
-        lineId: userProfile.userId,
-        qid: QID, 
-        answer: selectedValue,
-        memo: memoValue // ★追加：GASに備考を送る
-      };
-
-      // CORS（クロスドメイン通信）対策として、text/plainで送信
       fetch(GAS_API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'text/plain', 
-        },
-        body: JSON.stringify(answerData)
+        method: "POST",
+        headers: { "Content-Type": "text/plain" },
+        body: JSON.stringify({
+          action: "attendance_answer",
+          lineId: userProfile.userId,
+          qid: eventId,
+          answer: selected.value,
+          memo: document.getElementById("memo-input").value,
+          liff_token: liff.getAccessToken() || ""
+        })
       })
-      .then(response => response.json())
-      .then(result => {
-        if (result.success) {
-          alert("回答を送信しました！");
-          liff.closeWindow(); // LINEのトーク画面に戻る
-        } else {
-          alert("保存に失敗しました。");
-          submitBtn.disabled = false;
-          submitBtn.textContent = "回答を送信する";
-        }
-      })
-      .catch(error => {
-        console.error("Error:", error);
-        alert("通信エラーが発生しました。電波の良いところで再度お試しください。");
-        submitBtn.disabled = false;
-        submitBtn.textContent = "回答を送信する";
-      });
+        .then(response => response.json())
+        .then(result => {
+          if (!result.success) {
+            throw new Error(getApiErrorMessage(result, "回答を保存できませんでした。"));
+          }
+          alert("回答を送信しました。");
+          liff.closeWindow();
+        })
+        .catch(error => {
+          console.error("Attendance submit failed:", error);
+          alert(error.message || "通信エラーが発生しました。電波の良いところで再度お試しください。");
+          submitButton.disabled = false;
+          submitButton.textContent = "回答を送信する";
+        });
+    }
+
+    function getApiErrorMessage(result, fallback) {
+      if (result && typeof result.message === "string" && result.message) {
+        return result.message;
+      }
+      if (result && result.error && typeof result.error.message === "string") {
+        return result.error.message;
+      }
+      return fallback;
     }
   </script>
 </body>
