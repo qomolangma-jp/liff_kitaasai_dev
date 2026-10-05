@@ -1,29 +1,24 @@
 (function (global) {
-  var SHARED_GAS_URL = "https://script.google.com/macros/s/AKfycbzFqNc9tAB_TDqyNIXe_rkbHB6gorUGFljSGtc8boyRsW6zcztZ8-2JgRVipe9WOnuA/exec";
+  var SHARED_GAS_URL = "https://script.google.com/macros/s/AKfycbxIuL_-Fe71orznhpQ2pnGM8MY-ofUp8csuX-d2KPKGnR01SjFIDfkdbkFdY5HhLk8A_Q/exec";
 
   var PAGE_CONFIGS = {
     profile: {
-      liffId: "2011489610-3P5OEF1C",
+      liffId: "2008893549-jeCNKx4Y",
       gasUrl: SHARED_GAS_URL
     },
     bookroom: {
-      liffId: "2011489610-2trNDx6c",
+      liffId: "2008893549-vbVJOMEv",
       gasUrl: SHARED_GAS_URL
     },
     notice: {
-      liffId: "2011489610-y90vBXBu",
+      liffId: "2008893549-d75d72lX",
       gasUrl: SHARED_GAS_URL,
-      registerFormUrl: "https://liff.line.me/2011489610-3P5OEF1C"
+      registerFormUrl: "https://liff.line.me/2008893549-jeCNKx4Y"
     },
     attendance: {
-      liffId: "2011489610-IM9eN1yu",
+      liffId: "2008893549-bATZDh34",
       gasUrl: SHARED_GAS_URL
     },
-    safetycheck: {
-      liffId: "2011489610-RZBPRM9X",
-      gasUrl: SHARED_GAS_URL,
-      gatewayUrl: ""
-    }
   };
 
   function getPageConfig(pageKey) {
