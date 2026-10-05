@@ -74,7 +74,7 @@ function buildSafetyCheckLiffUrl(surveyId) {
   }
 
   if (!liffBase) {
-    var appId = String(APP_CONFIG.get('LIFF_SAFETY_CHECK_APP_ID', '2008893549-RZBPRM9X') || '2008893549-RZBPRM9X').trim();
+    var appId = APP_CONFIG.getRequired('LIFF_SAFETY_CHECK_APP_ID');
     liffBase = 'https://liff.line.me/' + appId;
   }
 
@@ -477,22 +477,22 @@ function getSafetyCheckConfig() {
 }
 
 function debugSafetyCheckOpen() {
-  var testSurveyId = 'sc_20260905_162817_0989e6';
-  var testLineId = 'U55a2432dba0568deec6854f249cd06c0';
+  var debugConfig = getSafetyCheckDebugConfig();
   var result = handleSafetyCheckOpen({
-    surveyId: testSurveyId,
-    lineId: testLineId
+    surveyId: debugConfig.surveyId,
+    lineId: debugConfig.lineId
   });
   Logger.log('debugSafetyCheckOpen result: ' + JSON.stringify(result));
   return result;
 }
 
 function debugSafetyCheckRoute() {
+  var debugConfig = getSafetyCheckDebugConfig();
   var e = {
     parameter: {
       action: 'safety_check',
-      sid: 'sc_20260905_162817_0989e6',
-      line_id: 'U55a2432dba0568deec6854f249cd06c0'
+      sid: debugConfig.surveyId,
+      line_id: debugConfig.lineId
     }
   };
 
@@ -502,10 +502,11 @@ function debugSafetyCheckRoute() {
 }
 
 function debugSafetyCheckPostSubmit() {
+  var debugConfig = getSafetyCheckDebugConfig();
   var payload = {
     action: 'safety_check_submit',
-    survey_id: 'sc_20260905_162817_0989e6',
-    line_id: 'U55a2432dba0568deec6854f249cd06c0',
+    survey_id: debugConfig.surveyId,
+    line_id: debugConfig.lineId,
     answer_status: 'safe',
     remarks: 'debug test',
     user_name: 'デバッグユーザー',
@@ -520,4 +521,11 @@ function debugSafetyCheckPostSubmit() {
   });
   Logger.log('debugSafetyCheckPostSubmit response: ' + result.getContent());
   return result;
+}
+
+function getSafetyCheckDebugConfig() {
+  return {
+    surveyId: APP_CONFIG.getRequired('DEBUG_SAFETY_CHECK_SURVEY_ID'),
+    lineId: APP_CONFIG.getRequired('DEBUG_SAFETY_CHECK_LINE_ID')
+  };
 }

@@ -55,7 +55,7 @@ var APP_CONFIG = (function buildConfig() {
       safetyCheckAccessLog: get("SHEET_SAFETY_CHECK_ACCESS_LOG", "survey_access_log")
     },
     registration: {
-      formUrl: get("REGISTER_FORM_URL", "https://liff.line.me/2008893549-jeCNKx4Y")
+      formUrl: getRequired("REGISTER_FORM_URL")
     },
     push: {
       historySpreadsheetId: get("HISTORY_SS_ID", ""),

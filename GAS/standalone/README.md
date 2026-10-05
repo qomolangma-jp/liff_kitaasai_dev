@@ -48,6 +48,17 @@ Set these before deployment:
 - LINE_SIGNATURE_VERIFY_REQUIRED (default: false)
 - LIFF_TOKEN_VERIFY_ENABLED (true/false)
 - REGISTER_FORM_URL
+- LIFF_SAFETY_CHECK_APP_ID (required unless LIFF_SAFETY_CHECK_BASE_URL or LIFF_BASE_URL is set)
+
+Optional safety-check properties:
+
+- LIFF_SAFETY_CHECK_BASE_URL (full LIFF URL; takes precedence over LIFF_BASE_URL)
+- LIFF_BASE_URL (fallback full LIFF URL)
+- DEBUG_SAFETY_CHECK_SURVEY_ID (required to run the safety-check debug functions)
+- DEBUG_SAFETY_CHECK_LINE_ID (required to run the safety-check debug functions)
+
+`REGISTER_FORM_URL` must be set explicitly. The safety-check LIFF app ID and debug
+IDs are not embedded in the source; configure them in Script Properties when needed.
 
 Attendance spreadsheet:
 

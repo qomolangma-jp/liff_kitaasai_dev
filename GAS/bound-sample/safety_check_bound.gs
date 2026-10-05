@@ -114,7 +114,10 @@ function buildSafetyCheckLiffUrl(surveyId) {
   }
 
   if (!liffBase) {
-    var appId = String(scriptProps.getProperty('LIFF_SAFETY_CHECK_APP_ID') || '2008893549-RZBPRM9X').trim();
+    var appId = String(scriptProps.getProperty('LIFF_SAFETY_CHECK_APP_ID') || '').trim();
+    if (!appId) {
+      throw new Error('LIFF_SAFETY_CHECK_APP_ID is not set.');
+    }
     liffBase = 'https://liff.line.me/' + appId;
   }
 
