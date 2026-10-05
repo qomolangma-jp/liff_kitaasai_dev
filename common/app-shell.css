@@ -1,17 +1,17 @@
 :root {
-  --brand-50: #eef9ff;
-  --brand-100: #dff4ff;
-  --brand-200: #c7ebff;
-  --brand-300: #9be0ff;
-  --brand-500: #0d8bd8;
-  --brand-600: #0a6eb8;
-  --brand-700: #0a4d8f;
-  --brand-900: #083d6f;
-  --brand-green-50: #edfff7;
-  --brand-green-100: #d8fbe9;
-  --brand-green-500: #19b66d;
-  --brand-green-600: #13a261;
-  --brand-green-700: #0c8751;
+  --brand-50: #fff1f2;
+  --brand-100: #ffe4e6;
+  --brand-200: #fecdd3;
+  --brand-300: #fda4af;
+  --brand-500: #f43f5e;
+  --brand-600: #e11d48;
+  --brand-700: #be123c;
+  --brand-900: #881337;
+  --brand-yellow-50: #fefce8;
+  --brand-yellow-100: #fef9c3;
+  --brand-yellow-500: #eab308;
+  --brand-yellow-600: #ca8a04;
+  --brand-yellow-700: #a16207;
   --ink-50: #f8fafc;
   --ink-100: #f1f5f9;
   --ink-200: #e2e8f0;
@@ -36,7 +36,7 @@
 }
 
 html, body {
-  background: linear-gradient(180deg, #edf5fa 0%, #eefaf4 100%);
+  background: linear-gradient(180deg, #fff7ed 0%, #fffbea 100%);
 }
 
 body.app-page {
@@ -45,15 +45,15 @@ body.app-page {
   align-items: flex-start;
   justify-content: center;
   padding: 0;
-  background: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%);
+  background: linear-gradient(180deg, #fff7ed 0%, #ffedd5 100%);
 }
 
 .app-shell {
   width: 100%;
   max-width: 480px;
   min-height: 100vh;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fcff 100%);
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: linear-gradient(180deg, #ffffff 0%, #fffdf5 100%);
+  border: 1px solid rgba(225, 29, 72, 0.12);
   box-shadow: var(--shadow-soft);
   display: flex;
   flex-direction: column;
@@ -68,10 +68,11 @@ body.app-page {
 }
 
 .app-header {
-  background: linear-gradient(135deg, #0a6eb8 0%, #0d8bd8 34%, #14b66c 100%);
+  background: linear-gradient(135deg, #b91c1c 0%, #e11d48 70%, #f43f5e 100%);
+  border-bottom: 4px solid #facc15;
   padding: 0.95rem 1rem 0.8rem;
   flex-shrink: 0;
-  box-shadow: 0 12px 28px rgba(9, 86, 148, 0.18);
+  box-shadow: 0 12px 28px rgba(185, 28, 28, 0.2);
   position: relative;
 }
 
@@ -100,7 +101,7 @@ body.app-page {
   object-fit: cover;
   border-radius: 16px;
   border: 2px solid rgba(255,255,255,0.5);
-  box-shadow: 0 10px 20px rgba(8, 61, 111, 0.24);
+  box-shadow: 0 10px 20px rgba(127, 29, 29, 0.24);
   background: #fff;
 }
 
@@ -128,7 +129,7 @@ body.app-page {
   position: relative;
   z-index: 1;
   width: 100%;
-  background: rgba(8, 35, 63, 0.18);
+  background: rgba(136, 19, 55, 0.3);
   border-radius: 9999px;
   padding: 0.28rem;
   display: flex;
@@ -156,9 +157,9 @@ body.app-page {
 }
 
 .app-header__tab.is-active {
-  background: linear-gradient(180deg, rgba(11, 109, 185, 0.96) 0%, rgba(14, 166, 88, 0.92) 100%);
-  color: #ffffff;
-  box-shadow: 0 8px 18px rgba(8, 78, 137, 0.26);
+  background: linear-gradient(180deg, #fde047 0%, #facc15 100%);
+  color: #7f1d1d;
+  box-shadow: 0 8px 18px rgba(127, 29, 29, 0.24);
 }
 
 .app-header__tab:hover {
@@ -170,11 +171,11 @@ body.app-page {
 }
 
 .app-toolbar {
-  background: linear-gradient(90deg, rgba(10,110,184,0.96), rgba(19,162,97,0.96));
+  background: linear-gradient(90deg, #b91c1c, #e11d48);
   color: #ffffff;
   padding: 0.8rem 1rem;
   flex-shrink: 0;
-  border-bottom: 1px solid rgba(255,255,255,0.15);
+  border-bottom: 3px solid #facc15;
 }
 
 .app-toolbar__inner {
@@ -287,12 +288,12 @@ body.app-page {
 }
 
 .app-card--soft {
-  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+  background: linear-gradient(180deg, #fffbea 0%, #ffffff 100%);
 }
 
 .app-card--brand {
-  background: linear-gradient(135deg, rgba(223, 244, 255, 0.9) 0%, rgba(216, 251, 233, 0.9) 100%);
-  border-color: rgba(19, 162, 97, 0.2);
+  background: linear-gradient(135deg, rgba(255, 228, 230, 0.92) 0%, rgba(254, 249, 195, 0.92) 100%);
+  border-color: rgba(202, 138, 4, 0.3);
 }
 
 .app-card__meta {
@@ -342,15 +343,16 @@ body.app-page {
   font-weight: 800;
   border: none;
   color: #ffffff;
-  background: linear-gradient(135deg, var(--brand-600) 0%, var(--brand-green-600) 100%);
-  box-shadow: 0 12px 24px rgba(10, 110, 184, 0.18);
+  background: linear-gradient(135deg, #b91c1c 0%, var(--brand-600) 100%);
+  border-bottom: 3px solid #facc15;
+  box-shadow: 0 12px 24px rgba(185, 28, 28, 0.2);
   text-decoration: none;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .app-cta:hover {
   transform: translateY(-1px);
-  box-shadow: 0 14px 28px rgba(10, 110, 184, 0.2);
+  box-shadow: 0 14px 28px rgba(185, 28, 28, 0.24);
 }
 
 .app-cta--warning {
@@ -420,8 +422,8 @@ body.app-page {
 }
 
 .app-surface--brand {
-  background: var(--brand-50);
-  border-color: #d7f9e5;
+  background: linear-gradient(135deg, var(--brand-50), var(--brand-yellow-50));
+  border-color: var(--brand-yellow-100);
 }
 
 .app-empty-state {

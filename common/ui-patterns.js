@@ -43,8 +43,8 @@
   function buildAppHeader({
     tabLabels = ['ホーム', '一覧'],
     activeTab = 0,
-    brandTitle = '小松',
-    brandSub = 'Smart自治PJ',
+    brandTitle = '[Dev]',
+    brandSub = 'DX町内会_LINEシステム',
     logoPath = '../common/logo_square.jpg'
   } = {}) {
     return `
