@@ -107,6 +107,7 @@ GET:
 - action=member_check
 - action=bookroom_list
 - action=notice_bootstrap&ym=YYYY-MM&user_id=LINE_USER_ID
+- action=notice_months&user_id=LINE_USER_ID
 - action=get_monthly_items&ym=YYYY-MM
 - action=attendance_question&qid=EVENT_ID&uid=LINE_USER_ID
 - action=member_profile_get&line_id=LINE_USER_ID

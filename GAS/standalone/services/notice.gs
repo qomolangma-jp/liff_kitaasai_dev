@@ -44,6 +44,43 @@ function handleGetMonthlyItems(input) {
   return filterMonthlyItemsForViewer(out, req);
 }
 
+function handleGetNoticeMonths(input) {
+  var req = input || {};
+  var sheet = getSheetOrThrow(APP_CONFIG.spreadsheets.notice, APP_CONFIG.sheets.noticeItems);
+  var values = sheet.getDataRange().getDisplayValues();
+  if (values.length <= 1) return [];
+
+  var headers = buildHeaderIndexMap(values[0]);
+  var dateCol = headers["ymd"] !== undefined ? headers["ymd"] : headers["date"];
+  if (dateCol === undefined) {
+    throw new Error("Notice sheet is missing a ymd/date column");
+  }
+  var typeCol = headers["type"];
+  var items = [];
+
+  for (var i = 1; i < values.length; i++) {
+    var dateText = String(values[i][dateCol] || "").trim();
+    if (!dateText) continue;
+
+    items.push({
+      ymd: normalizeDateForNotice(dateText),
+      type: typeCol === undefined ? "" : String(values[i][typeCol] || "").trim()
+    });
+  }
+
+  var months = {};
+  filterMonthlyItemsForViewer(items, req).forEach(function (item) {
+    var match = String(item.ymd || "").match(/^(\d{4})\/(0[1-9]|1[0-2])\/\d{2}$/);
+    if (match) {
+      months[match[1] + "-" + match[2]] = true;
+    }
+  });
+
+  return Object.keys(months).sort(function (a, b) {
+    return a < b ? 1 : -1;
+  });
+}
+
 function filterMonthlyItemsForViewer(items, input) {
   var req = input || {};
   var member = null;
@@ -91,11 +128,17 @@ function handleNoticeBootstrap(input) {
     displayName: req.displayName || "",
     pictureUrl: req.pictureUrl || ""
   });
+  var availableMonths = handleGetNoticeMonths({
+    userId: req.userId || "",
+    displayName: req.displayName || "",
+    pictureUrl: req.pictureUrl || ""
+  });
 
   return {
     ym: ym,
     member: member,
-    items: items
+    items: items,
+    availableMonths: availableMonths
   };
 }
 

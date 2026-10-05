@@ -214,7 +214,7 @@
 			currentItems: [],
 			archiveItems: [],
 			archiveLoaded: false,
-			archiveLoading: false,
+			archiveRequestId: 0,
 			availableArchiveMonths: []
 		};
 
@@ -275,28 +275,18 @@
 			return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 		}
 
-		function buildRecentMonths(count = 12) {
-			const months = [];
-			const base = new Date();
-			base.setDate(1);
-			for (let i = 0; i < count; i++) {
-				const d = new Date(base.getFullYear(), base.getMonth() - i, 1);
-				const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-				months.push(ym);
-			}
-			return months;
-		}
-
-		function registerArchiveMonth(ym) {
-			if (!ym || !/^\d{4}-\d{2}$/.test(ym)) return;
-			const nextMonths = Array.from(new Set([...(state.availableArchiveMonths || []), ym]));
-			state.availableArchiveMonths = nextMonths.sort((a, b) => (a < b ? 1 : -1));
+		function setAvailableArchiveMonths(months) {
+			const validMonths = Array.isArray(months)
+				? months.filter((ym) => /^\d{4}-(0[1-9]|1[0-2])$/.test(ym))
+				: [];
+			state.availableArchiveMonths = Array.from(new Set(validMonths))
+				.sort((a, b) => (a < b ? 1 : -1));
 		}
 
 		function getSelectableArchiveMonths() {
-			const months = state.availableArchiveMonths && state.availableArchiveMonths.length > 0
+			const months = state.availableArchiveMonths.length > 0
 				? state.availableArchiveMonths
-				: buildRecentMonths(12);
+				: [getCurrentYm()];
 			return Array.from(new Set(months)).sort((a, b) => (a < b ? 1 : -1));
 		}
 
@@ -618,23 +608,43 @@
 			const items = rows
 				.map((item) => toMonthlyItem(item))
 				.filter((item) => item.label || item.url !== '#');
+			const availableMonths = Array.isArray(data && data.availableMonths)
+				? data.availableMonths
+				: null;
 
 			writeMemberProfileCache(profile.userId || '', member);
 			writeMonthlyItemsCache(ym, profile.userId || '', items);
 
 			return {
 				member,
-				items
+				items,
+				availableMonths
 			};
+		}
+
+		async function fetchNoticeMonths() {
+			const profile = state.profile || {};
+			const raw = await gasGet({
+				action: 'notice_months',
+				user_id: profile.userId || '',
+				display_name: profile.displayName || '',
+				picture_url: profile.pictureUrl || ''
+			});
+
+			if (raw && raw.ok === false) {
+				throw new Error(raw.error && raw.error.message || 'Notice month request failed');
+			}
+			const data = raw && raw.data ? raw.data : raw;
+			if (!data || !Array.isArray(data.months)) {
+				throw new Error('Notice month response did not contain a months list');
+			}
+			return data.months;
 		}
 
 		async function fetchMonthlyItems(ym) {
 			const userId = state.profile?.userId || '';
 			const cached = readMonthlyItemsCache(ym, userId);
-			if (cached) {
-				registerArchiveMonth(ym);
-				return cached;
-			}
+			if (cached) return cached;
 
 			const raw = await gasGet({
 				action: 'get_monthly_items',
@@ -646,11 +656,6 @@
 			const normalized = rows
 				.map((item) => toMonthlyItem(item))
 				.filter((item) => item.label || item.url !== '#');
-
-			if (normalized.length > 0) {
-				registerArchiveMonth(ym);
-				refreshArchiveSelector();
-			}
 
 			writeMonthlyItemsCache(ym, userId, normalized);
 
@@ -764,21 +769,18 @@
 
 		async function loadArchiveForMonth(ym, options = {}) {
 			const { showInlineLoading = true } = options;
-			if (state.archiveLoading) return;
-			state.archiveLoading = true;
+			const requestId = ++state.archiveRequestId;
+			state.archiveLoaded = false;
 
-			try {
-				if (showInlineLoading) {
-					el.archiveList.innerHTML = '<div class="text-sm text-slate-500 px-1">読み込み中...</div>';
-				}
-				const items = await fetchMonthlyItems(ym);
-				state.archiveItems = items;
-				renderArchiveItems(items, ym);
-				state.archiveLoaded = true;
-				logAction({ action_type: 'page_view', ym });
-			} finally {
-				state.archiveLoading = false;
+			if (showInlineLoading) {
+				el.archiveList.innerHTML = '<div class="text-sm text-slate-500 px-1">読み込み中...</div>';
 			}
+			const items = await fetchMonthlyItems(ym);
+			if (requestId !== state.archiveRequestId || el.archiveMonthSelect.value !== ym) return;
+			state.archiveItems = items;
+			renderArchiveItems(items, ym);
+			state.archiveLoaded = true;
+			logAction({ action_type: 'page_view', ym });
 		}
 
 		async function ensureArchiveLoaded() {
@@ -787,15 +789,18 @@
 			try {
 				await loadArchiveForMonth(ym, { showInlineLoading: true });
 			} catch (error) {
-				renderEmpty(el.archiveList, 'データの取得に失敗しました');
-				showToast('バックナンバー取得に失敗しました', 'error');
+				if (el.archiveMonthSelect.value === ym) {
+					renderEmpty(el.archiveList, 'データの取得に失敗しました');
+					showToast('バックナンバー取得に失敗しました', 'error');
+				}
 			}
 		}
 
 		function prefetchArchiveSilently() {
-			if (state.archiveLoaded || state.archiveLoading) return;
-			const ym = el.archiveMonthSelect.value || getCurrentYm();
+			if (state.archiveLoaded) return;
 			const runner = async () => {
+				if (state.archiveLoaded) return;
+				const ym = el.archiveMonthSelect.value || getCurrentYm();
 				try {
 					await loadArchiveForMonth(ym, { showInlineLoading: false });
 				} catch (_) {
@@ -898,8 +903,10 @@
 				try {
 					await loadArchiveForMonth(ym, { showInlineLoading: true });
 				} catch (error) {
-					renderEmpty(el.archiveList, 'データの取得に失敗しました');
-					showToast('バックナンバー取得に失敗しました', 'error');
+					if (el.archiveMonthSelect.value === ym) {
+						renderEmpty(el.archiveList, 'データの取得に失敗しました');
+						showToast('バックナンバー取得に失敗しました', 'error');
+					}
 				}
 			});
 		}
@@ -974,12 +981,12 @@
 
 				const ym = getCurrentYm();
 				setLoadingMessage('住民名簿と照合中...');
-				registerArchiveMonth(ym);
 				if (state.isLocalMode) {
 					const currentItemsPromise = fetchMonthlyItems(ym);
 					state.member = await fetchMemberProfile();
 					setLoadingMessage('今月の回覧データを取得中...');
 					state.currentItems = await currentItemsPromise;
+					setAvailableArchiveMonths(await fetchNoticeMonths());
 				} else {
 					let bootstrap = null;
 					try {
@@ -991,11 +998,17 @@
 					if (bootstrap) {
 						state.member = bootstrap.member;
 						state.currentItems = bootstrap.items;
+						if (bootstrap.availableMonths) {
+							setAvailableArchiveMonths(bootstrap.availableMonths);
+						} else {
+							setAvailableArchiveMonths(await fetchNoticeMonths());
+						}
 					} else {
 						const currentItemsPromise = fetchMonthlyItems(ym);
 						state.member = await fetchMemberProfile();
 						setLoadingMessage('今月の回覧データを取得中...');
 						state.currentItems = await currentItemsPromise;
+						setAvailableArchiveMonths(await fetchNoticeMonths());
 					}
 				}
 

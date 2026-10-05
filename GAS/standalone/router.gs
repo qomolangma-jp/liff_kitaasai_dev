@@ -101,6 +101,15 @@ function routeGet(action, e) {
         })
       }, callback);
 
+    case "notice_months":
+      return okResponse(action, {
+        months: handleGetNoticeMonths({
+          userId: p.user_id || p.uid || "",
+          displayName: p.display_name || "",
+          pictureUrl: p.picture_url || ""
+        })
+      }, callback);
+
     case "notice_bootstrap":
       return okResponse(action, handleNoticeBootstrap({
         ym: p.ym || "",
