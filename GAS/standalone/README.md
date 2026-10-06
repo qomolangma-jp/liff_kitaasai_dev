@@ -94,6 +94,7 @@ Webhook notes:
 Bookroom push notification notes:
 
 - Reservation submit now sends a receipt message to applicant and approval request to admins.
+- Selecting `全室予約` reserves both `小会議室` and `大広間`; requests are rejected if either room has a conflicting slot.
 - Admin approval/reject postback sends decision message to applicant.
 - Required for these notifications:
    - LINE_CHANNEL_ACCESS_TOKEN must be valid (Messaging API channel token)

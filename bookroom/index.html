@@ -281,7 +281,7 @@
               <span class="bg-brand-100 text-brand-700 w-5 h-5 rounded-full flex items-center justify-center text-xs mr-2">2</span>
               部屋を選択
             </label>
-            <div class="grid grid-cols-2 gap-3">
+            <div class="grid grid-cols-3 gap-2">
               <!-- 小会議室 -->
               <label class="relative flex flex-col items-center justify-center p-4 border-2 border-slate-100 rounded-xl cursor-pointer hover:bg-slate-50 transition group">
                 <input type="radio" name="room" value="小会議室" class="sr-only peer" checked required>
@@ -295,6 +295,13 @@
                 <div class="peer-checked:border-brand-500 border-2 border-transparent rounded-xl absolute inset-0 transition pointer-events-none"></div>
                 <i class="fa-solid fa-people-roof text-slate-400 text-xl mb-1.5 transition group-hover:text-slate-600 peer-checked:text-brand-500"></i>
                 <span class="text-sm font-bold text-slate-700">大広間</span>
+              </label>
+              <!-- 全室予約 -->
+              <label class="relative flex flex-col items-center justify-center p-4 border-2 border-slate-100 rounded-xl cursor-pointer hover:bg-slate-50 transition group">
+                <input type="radio" name="room" value="全室予約" class="sr-only peer">
+                <div class="peer-checked:border-brand-500 border-2 border-transparent rounded-xl absolute inset-0 transition pointer-events-none"></div>
+                <i class="fa-solid fa-building text-slate-400 text-xl mb-1.5 transition group-hover:text-slate-600 peer-checked:text-brand-500"></i>
+                <span class="text-sm font-bold text-slate-700">全室予約</span>
               </label>
             </div>
           </div>
@@ -812,9 +819,12 @@ function updateTimeSlots() {
   }
 
   // 現在選択されている「日付」と「部屋」の既存予約データを取得
+  const selectedRooms = selectedRoom === "全室予約"
+    ? ["小会議室", "大広間"]
+    : [selectedRoom];
   const currentBookings = safeBookedData.filter(b => 
     b.date === selectedDate && 
-    b.room === selectedRoom && 
+    selectedRooms.includes(b.room) &&
     (b.status === "確定" || b.status === "保留")
   );
 
@@ -979,9 +989,23 @@ function updateTimeSlots() {
         return;
       }
 
-      const sorted = [...safeBookedData].sort((a, b) => new Date(b.date) - new Date(a.date));
+      const sorted = safeBookedData
+        .map(item => ({ ...item }))
+        .sort((a, b) => new Date(b.date) - new Date(a.date));
+      const reservationsByBatch = new Map();
+      const displayReservations = sorted.filter(item => {
+        if (!item.batch_id) return true;
+        const key = `${item.batch_id}_${item.date}_${item.time_slot}`;
+        const existing = reservationsByBatch.get(key);
+        if (!existing) {
+          reservationsByBatch.set(key, item);
+          return true;
+        }
+        if (existing.room !== item.room) existing.room = "全室予約";
+        return false;
+      });
 
-      sorted.forEach(item => {
+      displayReservations.forEach(item => {
         const isMine = item.line_id === liffProfile.userId;
         const status = item.status || "確定";
         const card = document.createElement("div");
@@ -1304,14 +1328,21 @@ async function submitReservation(e) {
   if (isLocal) {
     setTimeout(() => {
       // 展開されたすべてのスロットを追加
-      targetSlots.forEach(slot => {
-        bookedData.push({
-          date: selectedDate,
-          room: selectedRoom,
-          time_slot: slot, // "午前", "午後", "夜間" それぞれが個別に登録される
-          line_id: liffProfile.userId,
-          name: memberProfile ? memberProfile.fullName : liffProfile.displayName,
-          status: "保留"
+      const selectedRooms = selectedRoom === "全室予約"
+        ? ["小会議室", "大広間"]
+        : [selectedRoom];
+      const localBatchId = `LOCAL_${Date.now()}`;
+      selectedRooms.forEach(room => {
+        targetSlots.forEach(slot => {
+          bookedData.push({
+            date: selectedDate,
+            room,
+            time_slot: slot,
+            line_id: liffProfile.userId,
+            name: memberProfile ? memberProfile.fullName : liffProfile.displayName,
+            status: "保留",
+            batch_id: localBatchId
+          });
         });
       });
 

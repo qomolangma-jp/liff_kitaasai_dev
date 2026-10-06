@@ -15,7 +15,8 @@ function handleBookroomList() {
       room: String(row[5] || ""),
       line_id: String(row[1] || ""),
       name: String(row[2] || ""),
-      status: status
+      status: status,
+      batch_id: String(row[8] || "")
     });
   }
   return out;
@@ -26,6 +27,7 @@ function handleBookroomSubmit(payload) {
   var lineName = String(payload.line_name || "").trim();
   var date = String(payload.date || "").trim();
   var room = String(payload.room || "").trim();
+  var targetRooms = room === "全室予約" ? ["小会議室", "大広間"] : [room];
   var requestText = String(payload.request || "").trim();
 
   if (!lineId || !date || !room) {
@@ -54,7 +56,7 @@ function handleBookroomSubmit(payload) {
     var rowRoom = String(values[i][5] || "").trim();
     var rowStatus = String(values[i][7] || "").trim();
 
-    if (rowDate === date && rowRoom === room && (rowStatus === "確定" || rowStatus === "保留") && targetSlots.indexOf(rowSlot) >= 0) {
+    if (rowDate === date && targetRooms.indexOf(rowRoom) >= 0 && (rowStatus === "確定" || rowStatus === "保留") && targetSlots.indexOf(rowSlot) >= 0) {
       return { status: "error", message: "selected slot already booked" };
     }
   }
@@ -72,18 +74,20 @@ function handleBookroomSubmit(payload) {
     batch_id: batchId
   });
 
-  targetSlots.forEach(function (slot) {
-    sheet.appendRow([
-      now,
-      lineId,
-      realName,
-      date,
-      slot,
-      room,
-      requestText,
-      "保留",
-      batchId
-    ]);
+  targetRooms.forEach(function (targetRoom) {
+    targetSlots.forEach(function (slot) {
+      sheet.appendRow([
+        now,
+        lineId,
+        realName,
+        date,
+        slot,
+        targetRoom,
+        requestText,
+        "保留",
+        batchId
+      ]);
+    });
   });
 
   // 申請者へ受付通知
@@ -120,6 +124,7 @@ function processBookroomApprovalByBatch(batchId, action) {
   var updated = 0;
   var firstMatched = null;
   var slots = [];
+  var rooms = [];
 
   for (var i = 1; i < values.length; i++) {
     if (String(values[i][8] || "").trim() !== String(batchId || "").trim()) continue;
@@ -127,19 +132,21 @@ function processBookroomApprovalByBatch(batchId, action) {
       firstMatched = values[i];
     }
     slots.push(String(values[i][4] || "").trim());
+    rooms.push(String(values[i][5] || "").trim());
     if (String(values[i][7] || "").trim() !== "保留") continue;
     sheet.getRange(i + 1, 8).setValue(toStatus);
     updated++;
   }
 
   var uniqueSlots = Array.from(new Set(slots.filter(Boolean)));
+  var uniqueRooms = Array.from(new Set(rooms.filter(Boolean)));
   return {
     updated: updated,
     status: toStatus,
     applicantId: firstMatched ? String(firstMatched[1] || "").trim() : "",
     applicantName: firstMatched ? String(firstMatched[2] || "").trim() : "",
     date: firstMatched ? Utilities.formatDate(new Date(firstMatched[3]), "JST", "yyyy-MM-dd") : "",
-    room: firstMatched ? String(firstMatched[5] || "").trim() : "",
+    room: uniqueRooms.length > 1 ? "全室予約" : (uniqueRooms[0] || ""),
     slots: uniqueSlots,
     batchId: String(batchId || "")
   };
